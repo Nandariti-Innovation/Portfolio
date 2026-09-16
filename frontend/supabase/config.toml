@@ -1,0 +1,6 @@
+project_id = "portfolio-contact"
+
+# Public contact form: visitors do not need to sign in.
+# Validation, allowed browser origins, and database-backed limits are enforced inside the function.
+[functions.portfolio-contact]
+verify_jwt = false
