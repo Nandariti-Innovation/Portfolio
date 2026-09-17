@@ -31,7 +31,7 @@ export const ProjectPageAboutMe = () => {
 
   useEffect(() => {
     if (socialList.length == 0) dispatch(fetchSocials());
-  }, [socialList]);
+  }, [socialList, dispatch]);
 
   return (
     <div className="w-[350px] h-full border-r-2 border-solid bg-footerBgColor border-lightthemebg flex items-center justify-evenly flex-col max-sm:hidden">

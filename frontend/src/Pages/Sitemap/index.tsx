@@ -12,7 +12,7 @@ export default function Sitemap() {
     if (projects.length === 0) {
       dispatch(fetchProjectsList());
     }
-  }, [projects]);
+  }, [projects, dispatch]);
 
   return (
     <footer className="bg-gray-50 text-sm text-gray-700 px-6 py-12 border-t border-gray-200 h-dvh w-screen">

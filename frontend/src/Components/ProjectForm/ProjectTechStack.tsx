@@ -13,12 +13,12 @@ import { AppDispatch } from "@/StateManagement/Redux/reduxStore";
 export const ProjectTechStack: React.FC<ProjectTechStackProps> = ({ skillsList, selectedSkills, updateTechStack }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [newSkill, setNewSkill] = useState<SkillItem>({ skill_name: "", skill_image: "", skill_level: "beginner" });
-  const [selected, setSelected] = useState<string[]>(selectedSkills);
+  const selected = selectedSkills;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const closeRef = useRef<HTMLButtonElement | null>(null);
 
-  const toggle = (name: string) => setSelected((current) => current.includes(name) ? current.filter((item) => item !== name) : [...current, name]);
+  const toggle = (name: string) => updateTechStack(selected.includes(name) ? selected.filter((item) => item !== name) : [...selected, name]);
   const saveSkill = async () => {
     if (!newSkill.skill_name.trim() || !newSkill.skill_image) { setError("Add a skill name and choose an icon."); return; }
     setSaving(true); setError("");
@@ -30,7 +30,6 @@ export const ProjectTechStack: React.FC<ProjectTechStackProps> = ({ skillsList, 
     closeRef.current?.click();
   };
 
-  useEffect(() => { updateTechStack(selected); }, [selected]);
   useEffect(() => { dispatch(fetchSkills()); }, [dispatch]);
 
   return <div className="space-y-2">
