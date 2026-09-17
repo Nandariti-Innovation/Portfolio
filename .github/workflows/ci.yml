@@ -1,0 +1,131 @@
+name: Portfolio CI
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: ESLint and TypeScript
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint:ci
+
+      - name: Check TypeScript
+        run: npm run typecheck
+
+  build:
+    name: Production build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build:ci
+
+  environment-safety:
+    name: Environment file safety
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Reject tracked environment files
+        shell: bash
+        run: |
+          tracked_env_files="$(
+            git ls-files |
+            grep -E '(^|/)\.env($|\.)' |
+            grep -vE '(^|/)\.env\.example$' ||
+            true
+          )"
+
+          if [ -n "$tracked_env_files" ]; then
+            echo "::error::Sensitive environment files are tracked:"
+            echo "$tracked_env_files"
+            exit 1
+          fi
+
+          echo "No sensitive environment files are tracked."
+
+  dependency-security:
+    name: Dependency vulnerability scan
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+  dependency-review:
+    name: Pull request dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
