@@ -13,7 +13,7 @@ export const TechStackShowCase: React.FC<TechStackShowCaseProps> = ({
 
   useEffect(() => {
     if (skills.length == 0) dispatch(fetchSkills());
-  }, [skills]);
+  }, [skills, dispatch]);
 
   if (IconDetail)
     return (

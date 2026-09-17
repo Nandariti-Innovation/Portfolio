@@ -10,24 +10,33 @@ export const LoadSignedImage: React.FC<LoadSignedImageProps> = ({
   const [imageURL, setImageURL] = useState("");
   const [failed, setFailed] = useState(false);
 
-  async function fetchImageURL() {
-    const { data, error } = await supabase.storage
-      .from("portfolio")
-      .createSignedUrl(imageData.name, 60 * 60);
-
-    if (error) {
-      setLoading(() => false);
-      setFailed(() => true);
-      return;
-    }
-    console.log(data);
-    setLoading(() => false);
-    setImageURL(() => data.signedUrl);
-  }
-
   useEffect(() => {
-    fetchImageURL();
-  }, []);
+    let cancelled = false;
+    setLoading(true);
+    setFailed(false);
+    setImageURL("");
+
+    async function fetchImageURL() {
+      try {
+        const { data, error } = await supabase.storage
+          .from("portfolio")
+          .createSignedUrl(imageData.name, 60 * 60);
+        if (cancelled) return;
+        if (error) {
+          setFailed(true);
+        } else {
+          setImageURL(data.signedUrl);
+        }
+      } catch {
+        if (!cancelled) setFailed(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void fetchImageURL();
+    return () => { cancelled = true; };
+  }, [imageData.name]);
 
   return (
     <div className="w-30 h-30">
