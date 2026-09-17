@@ -26,3 +26,8 @@ dist-ssr
 # software build folders
 *client
 *software
+
+# Environment files (including nested directories)
+.env
+.env.*
+!.env.example
