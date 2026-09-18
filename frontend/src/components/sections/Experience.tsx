@@ -1,5 +1,5 @@
 import { useSelector } from "react-redux";
-import { SectionHeader } from "./SectionHeader";
+import { HomepageSectionHeading } from "./HomepageSectionHeading";
 import { RootState } from "@/StateManagement/Redux/reduxStore";
 import { formatSQLDate } from "@/Utils/helperFunc";
 import { getSectionConfiguration } from "@/features/homepageSections/manifest";
@@ -11,15 +11,9 @@ export const Experience = () => {
 
   if (!section?.enabled) return null;
 
-  const { heading } = section;
-
   return (
     <section className="panel content-panel" id="experience">
-      <SectionHeader
-        index={heading.index}
-        eyebrow={heading.eyebrow.toUpperCase()}
-        title={heading.title}
-      />
+      <HomepageSectionHeading section={section} />
       <div className="timeline">
         {experience.map((item) => (
           <article key={item.work_id}>

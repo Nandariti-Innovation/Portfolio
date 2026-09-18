@@ -1,7 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/StateManagement/Redux/reduxStore";
-import { SectionHeader } from "./SectionHeader";
+import { HomepageSectionHeading } from "./HomepageSectionHeading";
 import { getSectionConfiguration } from "@/features/homepageSections/manifest";
 
 export const Blog = () => {
@@ -11,15 +11,9 @@ export const Blog = () => {
 
   if (!section?.enabled || !blogs.length) return null;
 
-  const { heading } = section;
-
   return (
     <section className="panel content-panel" id="blog">
-      <SectionHeader
-        index={heading.index}
-        eyebrow={heading.eyebrow}
-        title={heading.title}
-      />
+      <HomepageSectionHeading section={section} />
       <div className="post-list">
         {blogs.map((post) => (
           <article key={post.id}>

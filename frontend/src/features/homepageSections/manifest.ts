@@ -161,7 +161,7 @@ export function resolveHeadingManifest(
 
 export function getSectionConfiguration(
   settings: SettingsType[],
-  sectionKey: "experience" | "project" | "blog",
+  sectionKey: string,
 ) {
   return resolveHeadingManifest(settings).manifest[sectionKey];
 }

@@ -2,7 +2,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/StateManagement/Redux/reduxStore';
-import { SectionHeader } from './SectionHeader';
+import { HomepageSectionHeading } from './HomepageSectionHeading';
 import { FeaturedProjectCard } from './FeaturedProjectCard';
 import { getSectionConfiguration } from '@/features/homepageSections/manifest';
 
@@ -14,11 +14,9 @@ export const Projects = () => {
 
   if (!section?.enabled) return null;
 
-  const { heading } = section;
-
   return (
     <section className="panel content-panel" id="projects">
-      <SectionHeader index={heading.index} eyebrow={heading.eyebrow} title={heading.title} />
+      <HomepageSectionHeading section={section} />
       <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
         {projects.map((project, index) => <FeaturedProjectCard key={project.project_id} project={project} index={index} />)}
       </div>
