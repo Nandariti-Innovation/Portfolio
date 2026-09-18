@@ -3,12 +3,16 @@ import { FooterSectionType } from "../@types";
 import supabase from "@/Superbase/client";
 
 const dummyData: FooterSectionType = {
-  footer_description:
-    "Thank you for visiting my website and taking the time to explore my work. I appreciate your interest and hope you found the content engaging and insightful. If you have any questions, feedback, or just want to connect, I’d love to hear from you. Let’s stay connected.",
-  footer_qr_svg:
-    "https://nwacsfxeexspkaspjwjd.supabase.co/storage/v1/object/public/portfolio/linktreesvg.svg",
-  footer_email: "deepanshu.work@gmail.com",
-  footer_address: "Najafgarh, New Delhi - 43",
+  footer_description: "not fetched yet",
+  footer_qr_svg: "not fetched yet",
+  footer_email: "not fetched yet",
+  footer_address: "not fetched yet",
+  footer_heading: {
+    index: "00",
+    eyebrow: "dummy",
+    title_emphasis: "not fetched yet",
+    title_line: "not fetched yet",
+  },
 };
 
 const initialState = {
@@ -27,7 +31,7 @@ export const fetchFooterData = createAsyncThunk(
     if (footerError) return rejectWithValue(footerError.message);
 
     return footerList[0] || dummyData;
-  }
+  },
 );
 
 const footerSlice = createSlice({

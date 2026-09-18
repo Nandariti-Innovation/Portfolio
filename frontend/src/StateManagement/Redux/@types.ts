@@ -56,6 +56,10 @@ export type HeroSectionType = {
   hero_last_name: string;
   hero_other_words: string[];
   hero_greeting: string;
+  hero_misc: Record<
+    string,
+    string | number | Record<string, string | number> | HeadingType
+  >;
 };
 
 export type ServiceItem = {
@@ -77,6 +81,7 @@ export type FooterSectionType = {
   footer_qr_svg: string;
   footer_email: string;
   footer_address: string;
+  footer_heading: HeadingEmphasisType;
 };
 
 export type ExperienceType = {
@@ -111,4 +116,17 @@ export type SettingsType = {
     string,
     string | number | Record<string, string | number>
   >;
+};
+
+export type HeadingEmphasisType = {
+  index: string;
+  eyebrow: string;
+  title_line: string;
+  title_emphasis: string;
+};
+
+export type HeadingType = {
+  index: string;
+  eyebrow: string;
+  title: string;
 };

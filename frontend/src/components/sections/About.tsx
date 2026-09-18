@@ -1,19 +1,13 @@
 import { useSelector } from "react-redux";
 import { SectionHeader } from "./SectionHeader";
 import { RootState } from "@/StateManagement/Redux/reduxStore";
-
-type HeadingType = {
-  index: string;
-  eyebrow: string;
-  title: string;
-};
+import { HeadingType } from "@/StateManagement/Redux/@types";
 
 export const About = () => {
   const { HeroSection } = useSelector((state: RootState) => state.herosection);
   const { skills } = useSelector((state: RootState) => state.skills);
-  const { setting } = useSelector((state: RootState) => state.settings);
-  const heading = setting.find((item) => item.setting_name == "headings")
-    ?.setting_object.about as HeadingType;
+  const heading = HeroSection.hero_misc.about_section_heading as HeadingType;
+  console.log(HeroSection);
 
   return (
     <section className="panel split-panel" id="about">
