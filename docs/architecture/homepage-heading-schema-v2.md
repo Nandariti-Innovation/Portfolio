@@ -15,7 +15,7 @@ The manifest contains:
 - new sections added in the future;
 - heading content, visibility and display order;
 - the registered frontend template used to render each section;
-- the registered data source used to load each section;
+- the dedicated Supabase table that stores each section's records;
 - a declarative description of the section's data fields.
 
 Hero, About and Footer are intentionally outside this setting. Their configuration and rendering will be handled separately.
@@ -41,7 +41,7 @@ Supabase stores only safe identifiers and declarative metadata. It must never st
     "title": "Learning proven through practice."
   },
   "template_key": "certifications_v1",
-  "data_source_key": "certifications_v1",
+  "table_name": "certifications",
   "data_schema": {
     "version": 1,
     "fields": [
@@ -106,7 +106,7 @@ The `setting_object` is an object keyed by each section's stable `section_key`.
       "title": "Systems designed to move."
     },
     "template_key": "project_v1",
-    "data_source_key": "projects_v1",
+    "table_name": "projects",
     "data_schema": {
       "version": 1,
       "fields": []
@@ -122,7 +122,7 @@ The `setting_object` is an object keyed by each section's stable `section_key`.
       "title": "Ideas become useful when they ship."
     },
     "template_key": "experience_v1",
-    "data_source_key": "experience_v1",
+    "table_name": "work_experience",
     "data_schema": {
       "version": 1,
       "fields": []
@@ -138,7 +138,7 @@ The `setting_object` is an object keyed by each section's stable `section_key`.
       "title": "Writing from inside the build."
     },
     "template_key": "blog_v1",
-    "data_source_key": "blogs_v1",
+    "table_name": "blogs",
     "data_schema": {
       "version": 1,
       "fields": []
@@ -154,7 +154,7 @@ The `setting_object` is an object keyed by each section's stable `section_key`.
       "title": "Learning proven through practice."
     },
     "template_key": "certifications_v1",
-    "data_source_key": "certifications_v1",
+    "table_name": "certifications",
     "data_schema": {
       "version": 1,
       "fields": [
@@ -182,7 +182,7 @@ The shortened built-in `fields` arrays above are placeholders. Their complete fi
 | `order` | Positive integer used to order enabled homepage sections |
 | `heading` | Public heading content shown by the section template |
 | `template_key` | Safe identifier for a registered React template |
-| `data_source_key` | Safe identifier for a registered homepage data source |
+| `table_name` | Exact Supabase table that stores the section's records |
 | `data_schema` | Declarative field definitions used by dashboard forms and runtime validation |
 
 ### Section key
@@ -206,7 +206,7 @@ Recommended pattern:
 A new section should remain disabled until all of the following exist:
 
 - its Supabase table and RLS policies;
-- its registered data source;
+- its dedicated Supabase table and RLS policies;
 - its homepage RPC response;
 - its frontend data type;
 - its registered React template;
@@ -234,17 +234,258 @@ const sectionTemplateRegistry = {
 
 The settings row must not contain a component path. An unknown template key is invalid and must be skipped by the public renderer.
 
-### Data source key
+### Table name
 
-`data_source_key` is a logical registry key, not a raw database table name.
+`table_name` is the exact Supabase table that stores the section's records.
 
 ```text
-certifications_v1 -> approved certifications query/payload entry
+section_key: certifications
+table_name: certifications
 ```
 
-The homepage continues to make one call to `get_homepage_payload`. The public renderer must not execute `supabase.from(setting.data_source_key)`.
+Every new section owns a dedicated table. When the Certifications section is created, a `public.certifications` table is also created with columns matching its approved data contract.
 
-An unknown data-source key is invalid and must be skipped.
+The table must be created before the section can be enabled. Its creation must also include constraints, indexes and RLS policies appropriate for public homepage reads and authenticated dashboard management.
+
+The homepage continues to make one call to `get_homepage_payload`. That RPC reads each configured section table and returns its public data. The dashboard may use the validated `table_name` for CRUD operations, subject to Supabase RLS.
+
+The table name must match `^[a-z][a-z0-9_]*# Homepage Heading and Section Schema v2
+
+**Parent requirement:** #10  
+**Sub-issue:** #29  
+**Database row:** `public.settings` where `setting_name = 'headings'`  
+**Schema version:** `settings.schema_version = 2`
+
+## Purpose
+
+Schema v2 turns the headings setting into a manifest for configurable homepage sections.
+
+The manifest contains:
+
+- the existing Project, Experience and Blog sections;
+- new sections added in the future;
+- heading content, visibility and display order;
+- the registered frontend template used to render each section;
+- the dedicated Supabase table that stores each section's records;
+- a declarative description of the section's data fields.
+
+Hero, About and Footer are intentionally outside this setting. Their configuration and rendering will be handled separately.
+
+## Important architecture decision
+
+Project, Experience and Blog are not generic templates for every future section.
+
+Each new section receives its own frontend template when its design is created. For example, a Certifications section uses a template registered as `certifications_v1`, not the existing Project component.
+
+Supabase stores only safe identifiers and declarative metadata. It must never store React component paths, JavaScript, SQL, reducer paths or executable validation expressions.
+
+## Canonical section example
+
+```json
+{
+  "section_key": "certifications",
+  "enabled": false,
+  "order": 4,
+  "heading": {
+    "index": "04",
+    "eyebrow": "CERTIFICATIONS",
+    "title": "Learning proven through practice."
+  },
+  "template_key": "certifications_v1",
+  "table_name": "certifications",
+  "data_schema": {
+    "version": 1,
+    "fields": [
+      {
+        "key": "id",
+        "label": "ID",
+        "type": "integer",
+        "required": true,
+        "editable": false,
+        "generated": true
+      },
+      {
+        "key": "name",
+        "label": "Certification name",
+        "type": "string",
+        "input": "text",
+        "required": true,
+        "max_length": 120
+      },
+      {
+        "key": "url",
+        "label": "Certificate URL",
+        "type": "url",
+        "input": "url",
+        "required": false
+      },
+      {
+        "key": "completed_year",
+        "label": "Completion year",
+        "type": "integer",
+        "input": "number",
+        "required": true,
+        "minimum": 1990,
+        "maximum": 2100
+      },
+      {
+        "key": "organization",
+        "label": "Issuing organization",
+        "type": "string",
+        "input": "text",
+        "required": true,
+        "max_length": 120
+      }
+    ]
+  }
+}
+```
+
+## Complete headings object
+
+The `setting_object` is an object keyed by each section's stable `section_key`.
+
+```json
+{
+  "project": {
+    "section_key": "project",
+    "enabled": true,
+    "order": 1,
+    "heading": {
+      "index": "01",
+      "eyebrow": "SELECTED WORK",
+      "title": "Systems designed to move."
+    },
+    "template_key": "project_v1",
+    "table_name": "projects",
+    "data_schema": {
+      "version": 1,
+      "fields": []
+    }
+  },
+  "experience": {
+    "section_key": "experience",
+    "enabled": true,
+    "order": 2,
+    "heading": {
+      "index": "02",
+      "eyebrow": "EXPERIENCE",
+      "title": "Ideas become useful when they ship."
+    },
+    "template_key": "experience_v1",
+    "table_name": "work_experience",
+    "data_schema": {
+      "version": 1,
+      "fields": []
+    }
+  },
+  "blog": {
+    "section_key": "blog",
+    "enabled": true,
+    "order": 3,
+    "heading": {
+      "index": "03",
+      "eyebrow": "FIELD NOTES",
+      "title": "Writing from inside the build."
+    },
+    "template_key": "blog_v1",
+    "table_name": "blogs",
+    "data_schema": {
+      "version": 1,
+      "fields": []
+    }
+  },
+  "certifications": {
+    "section_key": "certifications",
+    "enabled": false,
+    "order": 4,
+    "heading": {
+      "index": "04",
+      "eyebrow": "CERTIFICATIONS",
+      "title": "Learning proven through practice."
+    },
+    "template_key": "certifications_v1",
+    "table_name": "certifications",
+    "data_schema": {
+      "version": 1,
+      "fields": [
+        {
+          "key": "name",
+          "label": "Certification name",
+          "type": "string",
+          "input": "text",
+          "required": true
+        }
+      ]
+    }
+  }
+}
+```
+
+The shortened built-in `fields` arrays above are placeholders. Their complete field contracts must be added when their current database models are mapped into schema v2.
+
+## Section properties
+
+| Property | Purpose |
+|---|---|
+| `section_key` | Stable identity used as the object key, HTML section ID and Redux state key |
+| `enabled` | Controls whether the public homepage renders the section |
+| `order` | Positive integer used to order enabled homepage sections |
+| `heading` | Public heading content shown by the section template |
+| `template_key` | Safe identifier for a registered React template |
+| `table_name` | Exact Supabase table that stores the section's records |
+| `data_schema` | Declarative field definitions used by dashboard forms and runtime validation |
+
+### Section key
+
+A section key must:
+
+- be unique;
+- match its containing object key;
+- start with a lowercase letter;
+- contain only lowercase letters, numbers and underscores;
+- remain stable after the section is created.
+
+Recommended pattern:
+
+```text
+^[a-z][a-z0-9_]*$
+```
+
+### Enabled
+
+A new section should remain disabled until all of the following exist:
+
+- its Supabase table and RLS policies;
+- its dedicated Supabase table and RLS policies;
+- its homepage RPC response;
+- its frontend data type;
+- its registered React template;
+- its dashboard management page;
+- successful validation and testing.
+
+### Order and heading index
+
+`order` controls layout position. `heading.index` is presentation text only.
+
+Changing `heading.index` must not reorder a section. Two enabled sections cannot use the same `order`.
+
+### Template key
+
+`template_key` resolves through an allowlisted frontend registry.
+
+```ts
+const sectionTemplateRegistry = {
+  project_v1: ProjectSection,
+  experience_v1: ExperienceSection,
+  blog_v1: BlogSection,
+  certifications_v1: CertificationsSection,
+};
+```
+
+The settings row must not contain a component path. An unknown template key is invalid and must be skipped by the public renderer.
+
+. A missing, invalid or inaccessible table makes the section invalid and prevents it from being enabled. There is no separate data-source key, registry or indirect mapping.
 
 ### Redux state
 
@@ -318,7 +559,7 @@ It must check:
 - required heading fields are present;
 - order values are positive integers;
 - enabled sections have unique order values;
-- template and data-source keys are registered;
+- the template key is registered and the declared table exists;
 - data-schema fields have unique valid keys;
 - all declared types and input controls are supported;
 - required field metadata is present.
@@ -334,19 +575,19 @@ The browser must never:
 - generate or run SQL from `data_schema`;
 - create a Supabase table from settings;
 - dynamically import a component path from settings;
-- accept an arbitrary database table name;
+- use an unvalidated `table_name` or bypass the table's RLS policies;
 - execute JavaScript or validation expressions stored in settings;
 - bypass Supabase RLS based on configuration.
 
-New physical tables, RPC changes and RLS policies require reviewed migrations. New custom templates require reviewed frontend code.
+Every new section requires its own physical table, RPC inclusion and RLS policies. New custom templates require reviewed frontend code.
 
 ## New-section delivery flow
 
 1. Design the section and its data contract.
 2. Add the section configuration with `enabled: false`.
 3. Create its Supabase migration and RLS policies.
-4. Register its approved data source.
-5. add its data to `get_homepage_payload`.
+4. Store the exact table name in `table_name`.
+5. Add the table's public data to `get_homepage_payload`.
 6. Create its TypeScript record type.
 7. Create and register its custom React template.
 8. Add its dashboard content page.
