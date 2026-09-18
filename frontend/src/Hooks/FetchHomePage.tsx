@@ -10,6 +10,7 @@ import { addSkills } from "@/StateManagement/Redux/slices/skills";
 import { updateSocialList } from "@/StateManagement/Redux/slices/socials";
 import { setSettingData } from "@/StateManagement/Redux/slices/settings";
 import { setHomepageBlogs, type HomepageBlog } from "@/StateManagement/Redux/slices/homepageBlogs";
+import type { SettingsType } from "@/StateManagement/Redux/@types";
 import supabase from "@/Superbase/client";
 import { useCallback, useState } from "react";
 import { useDispatch } from "react-redux";
@@ -57,7 +58,7 @@ type HomepagePayload = {
   work_experience?: unknown[];
   mentorship?: unknown[];
   projects?: unknown[];
-  settings?: unknown[];
+  settings?: SettingsType[];
   skills?: unknown[];
   blogs?: HomepageBlog[];
 };

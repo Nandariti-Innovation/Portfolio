@@ -4,19 +4,21 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '@/StateManagement/Redux/reduxStore';
 import { SectionHeader } from './SectionHeader';
 import { FeaturedProjectCard } from './FeaturedProjectCard';
-
-type HeadingType = { index: string; eyebrow: string; title: string };
+import { getSectionConfiguration } from '@/features/homepageSections/manifest';
 
 export const Projects = () => {
   const { featuredProject } = useSelector((state: RootState) => state.projects);
   const { setting } = useSelector((state: RootState) => state.settings);
-  const heading = setting.find(item => item.setting_name === 'headings')
-    ?.setting_object?.project as HeadingType | undefined;
+  const section = getSectionConfiguration(setting, 'project');
   const projects = (featuredProject || []).filter(project => project.project_id != null);
+
+  if (!section?.enabled) return null;
+
+  const { heading } = section;
 
   return (
     <section className="panel content-panel" id="projects">
-      <SectionHeader index={heading?.index || '03'} eyebrow={heading?.eyebrow || 'SELECTED WORK'} title={heading?.title || 'Systems designed to move.'} />
+      <SectionHeader index={heading.index} eyebrow={heading.eyebrow} title={heading.title} />
       <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
         {projects.map((project, index) => <FeaturedProjectCard key={project.project_id} project={project} index={index} />)}
       </div>

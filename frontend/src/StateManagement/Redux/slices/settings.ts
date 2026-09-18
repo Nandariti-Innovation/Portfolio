@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { SettingsType } from "../@types";
 import supabase from "@/Superbase/client";
 
@@ -24,7 +24,7 @@ const settingSlice = createSlice({
   name: "settings",
   initialState,
   reducers: {
-    setSettingData: (state, action) => {
+    setSettingData: (state, action: PayloadAction<SettingsType[]>) => {
       state.setting = action.payload;
     },
   },

@@ -2,25 +2,23 @@ import { useSelector } from "react-redux";
 import { SectionHeader } from "./SectionHeader";
 import { RootState } from "@/StateManagement/Redux/reduxStore";
 import { formatSQLDate } from "@/Utils/helperFunc";
-
-type HeadingType = {
-  index: string;
-  eyebrow: string;
-  title: string;
-};
+import { getSectionConfiguration } from "@/features/homepageSections/manifest";
 
 export const Experience = () => {
   const { experience } = useSelector((state: RootState) => state.experience);
   const { setting } = useSelector((state: RootState) => state.settings);
-  const heading = setting.find((item) => item.setting_name == "headings")
-    ?.setting_object.experience as HeadingType;
+  const section = getSectionConfiguration(setting, "experience");
+
+  if (!section?.enabled) return null;
+
+  const { heading } = section;
 
   return (
     <section className="panel content-panel" id="experience">
       <SectionHeader
-        index={heading?.index || "02"}
-        eyebrow={heading?.eyebrow.toUpperCase() || "EXPERIENCE"}
-        title={heading?.title || "Ideas become useful when they ship."}
+        index={heading.index}
+        eyebrow={heading.eyebrow.toUpperCase()}
+        title={heading.title}
       />
       <div className="timeline">
         {experience.map((item) => (

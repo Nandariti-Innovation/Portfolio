@@ -109,13 +109,13 @@ export type MentorshipType = {
   mentor_sessions_text: string;
 };
 
-export type SettingsType = {
+export type SettingsType<TSettingObject = unknown> = {
   setting_id: number;
   setting_name: string;
-  setting_object: Record<
-    string,
-    string | number | Record<string, string | number>
-  >;
+  setting_object: TSettingObject;
+  schema_version: number;
+  created_at: string;
+  updated_at: string;
 };
 
 export type HeadingEmphasisType = {

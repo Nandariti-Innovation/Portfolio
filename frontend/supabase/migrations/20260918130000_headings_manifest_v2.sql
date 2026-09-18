@@ -1,0 +1,114 @@
+begin;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from public.settings
+    where setting_name = 'headings'
+  ) then
+    raise exception 'Cannot migrate headings manifest: settings row does not exist';
+  end if;
+end
+$$;
+
+update public.settings
+set
+  setting_object = $manifest$
+  {
+    "experience": {
+      "section_key": "experience",
+      "enabled": true,
+      "order": 1,
+      "heading": { "index": "02", "eyebrow": "EXPERIENCE", "title": "Ideas become useful when they ship." },
+      "template_key": "experience_v1",
+      "table_name": "work_experience",
+      "data_schema": {
+        "version": 1,
+        "fields": [
+          { "key": "work_id", "label": "Experience ID", "type": "integer", "required": true, "editable": false, "generated": true },
+          { "key": "work_company_name", "label": "Company name", "type": "string", "input": "text", "required": true, "max_length": 120 },
+          { "key": "work_designation", "label": "Designation", "type": "string", "input": "text", "required": true, "max_length": 120 },
+          { "key": "work_short_description", "label": "Short description", "type": "text", "input": "textarea", "required": true, "max_length": 500 },
+          { "key": "work_start_date", "label": "Start date", "type": "date", "input": "date", "required": true },
+          { "key": "work_end_date", "label": "End date", "type": "date", "input": "date", "required": false, "nullable": true },
+          { "key": "work_location", "label": "Location", "type": "string", "input": "text", "required": true, "max_length": 120 },
+          { "key": "work_type", "label": "Employment type", "type": "string", "input": "select", "required": true, "options": ["full-time", "part-time", "freelance"] },
+          { "key": "work_roles_responsibility", "label": "Roles and responsibilities", "type": "string_array", "input": "repeater", "required": true },
+          { "key": "work_tech_stack", "label": "Technology stack", "type": "string_array", "input": "tags", "required": true }
+        ]
+      }
+    },
+    "project": {
+      "section_key": "project",
+      "enabled": true,
+      "order": 2,
+      "heading": { "index": "03", "eyebrow": "SELECTED WORK", "title": "Systems designed to move." },
+      "template_key": "project_v1",
+      "table_name": "projects",
+      "data_schema": {
+        "version": 1,
+        "fields": [
+          { "key": "project_id", "label": "Project ID", "type": "integer", "required": true, "editable": false, "generated": true },
+          { "key": "project_name", "label": "Project name", "type": "string", "input": "text", "required": true, "max_length": 160 },
+          { "key": "project_image", "label": "Project image", "type": "image", "input": "image", "required": true },
+          { "key": "project_description", "label": "Description", "type": "text", "input": "textarea", "required": true },
+          { "key": "project_features", "label": "Features", "type": "string_array", "input": "repeater", "required": true },
+          { "key": "project_problem_faced", "label": "Problems faced", "type": "text", "input": "textarea", "required": true },
+          { "key": "project_tech_stack", "label": "Technology stack", "type": "string_array", "input": "tags", "required": true },
+          { "key": "project_type", "label": "Project type", "type": "string", "input": "select", "required": true, "options": ["personal", "professional", "other"] },
+          { "key": "project_company_name", "label": "Company name", "type": "string", "input": "text", "required": false, "nullable": true, "max_length": 120 },
+          { "key": "project_priority", "label": "Homepage priority", "type": "string", "input": "text", "required": false, "nullable": true },
+          { "key": "project_start_date", "label": "Start date", "type": "date", "input": "date", "required": true },
+          { "key": "project_end_date", "label": "End date", "type": "date", "input": "date", "required": false, "nullable": true },
+          { "key": "project_status", "label": "Project status", "type": "string", "input": "select", "required": true, "options": ["ongoing", "completed", "paused"] },
+          { "key": "project_role", "label": "Role", "type": "string", "input": "text", "required": true, "max_length": 120 },
+          { "key": "project_team_size", "label": "Team size", "type": "integer", "input": "number", "required": true, "minimum": 1 },
+          { "key": "project_platform", "label": "Platform", "type": "string", "input": "text", "required": true },
+          { "key": "project_learning", "label": "Key learning", "type": "text", "input": "textarea", "required": true },
+          { "key": "project_github", "label": "GitHub URL", "type": "url", "input": "url", "required": false, "nullable": true },
+          { "key": "project_link", "label": "Project URL", "type": "url", "input": "url", "required": false, "nullable": true },
+          { "key": "project_company_website", "label": "Company website", "type": "url", "input": "url", "required": false, "nullable": true }
+        ]
+      }
+    },
+    "blog": {
+      "section_key": "blog",
+      "enabled": true,
+      "order": 3,
+      "heading": { "index": "04", "eyebrow": "FIELD NOTES", "title": "Writing from inside the build." },
+      "template_key": "blog_v1",
+      "table_name": "blogs",
+      "data_schema": {
+        "version": 1,
+        "fields": [
+          { "key": "id", "label": "Blog ID", "type": "uuid", "required": true, "editable": false, "generated": true },
+          { "key": "title", "label": "Title", "type": "string", "input": "text", "required": true, "max_length": 200 },
+          { "key": "subtitle", "label": "Subtitle", "type": "string", "input": "text", "required": false, "nullable": true, "max_length": 240 },
+          { "key": "slug", "label": "Slug", "type": "string", "input": "text", "required": false, "nullable": true },
+          { "key": "excerpt", "label": "Excerpt", "type": "text", "input": "textarea", "required": false, "nullable": true, "max_length": 500 },
+          { "key": "content", "label": "Content", "type": "rich_text", "input": "rich_text", "required": true },
+          { "key": "cover_image_url", "label": "Cover image", "type": "image", "input": "image", "required": false, "nullable": true },
+          { "key": "cover_image_path", "label": "Cover image storage path", "type": "string", "required": false, "nullable": true, "editable": false },
+          { "key": "cover_image_alt", "label": "Cover image alternative text", "type": "string", "input": "text", "required": false, "nullable": true, "max_length": 200 },
+          { "key": "tags", "label": "Tags", "type": "string_array", "input": "tags", "required": true },
+          { "key": "status", "label": "Status", "type": "string", "input": "select", "required": true, "options": ["draft", "published", "archived"] },
+          { "key": "is_featured", "label": "Featured", "type": "boolean", "input": "checkbox", "required": true },
+          { "key": "word_count", "label": "Word count", "type": "integer", "required": true, "editable": false, "generated": true, "minimum": 0 },
+          { "key": "reading_time_minutes", "label": "Reading time", "type": "integer", "required": true, "editable": false, "generated": true, "minimum": 1 },
+          { "key": "seo_title", "label": "SEO title", "type": "string", "input": "text", "required": false, "nullable": true, "max_length": 70 },
+          { "key": "seo_description", "label": "SEO description", "type": "text", "input": "textarea", "required": false, "nullable": true, "max_length": 170 },
+          { "key": "canonical_url", "label": "Canonical URL", "type": "url", "input": "url", "required": false, "nullable": true },
+          { "key": "published_at", "label": "Published at", "type": "datetime", "input": "datetime-local", "required": false, "nullable": true },
+          { "key": "created_at", "label": "Created at", "type": "datetime", "required": true, "editable": false, "generated": true },
+          { "key": "updated_at", "label": "Updated at", "type": "datetime", "required": true, "editable": false, "generated": true }
+        ]
+      }
+    }
+  }
+  $manifest$::jsonb,
+  schema_version = 2,
+  updated_at = now()
+where setting_name = 'headings';
+
+commit;
