@@ -5,20 +5,11 @@ import { ArrowUpRight, Mail } from "lucide-react";
 import { JSX } from "react";
 import { useSelector } from "react-redux";
 
-type HeadingType = {
-  index: string;
-  eyebrow: string;
-  title_line: string;
-  title_emphasis: string;
-};
-
 export const Contact = () => {
   const { socialList } = useSelector((state: RootState) => state.socials);
   const { footerList } = useSelector((state: RootState) => state.footer);
   const { HeroSection } = useSelector((state: RootState) => state.herosection);
-  const { setting } = useSelector((state: RootState) => state.settings);
-  const heading = setting.find((item) => item.setting_name == "headings")
-    ?.setting_object.footer as HeadingType;
+  const heading = footerList.footer_heading;
 
   const socialsvg: Record<string, JSX.Element> = {
     Github: <Github color="grey" />,
@@ -29,12 +20,12 @@ export const Contact = () => {
   return (
     <footer className="panel contact" id="contact">
       <p className="eyebrow">
-        {heading?.index || "05"} / {heading?.eyebrow || "LET’S BUILD"}
+        {heading?.index || "00"} / {heading?.eyebrow || "DUMMY"}
       </p>
       <h2>
-        {heading?.title_line || "Have a difficult idea?"}
+        {heading?.title_line || "DUMMY"}
         <br />
-        <em>{heading?.title_emphasis || "Let’s make it move."}</em>
+        <em>{heading?.title_emphasis || "DUMMY"}</em>
       </h2>
       <div className="contact-details">
         <div className="contact-copy">
