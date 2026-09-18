@@ -9,19 +9,23 @@ interface HeroSectionState {
 }
 
 const dummyData: HeroSectionType = {
-  hero_name: "Deepanshu Gulia",
-  hero_designation: ["Software Engineer", "Automation", "AI Engineer"],
-  hero_image:
-    "https://nwacsfxeexspkaspjwjd.supabase.co/storage/v1/object/public/portfolio/herophoto.webp",
-  hero_description:
-    "I am a Full Stack Developer specializing in the MERN stack. With over one year of professional experience and a portfolio of successful live projects, I have a strong foundation in frontend and backend technologies, including HTML, CSS, JavaScript, React.js, Node.js, and MongoDB.",
-  hero_short_description:
-    "I build interactive experiences where code, creativity and the physical world meet.",
+  hero_name: "DUMMY",
+  hero_designation: ["DUMMY", "DUMMY", "DUMMY"],
+  hero_image: "DUMMY",
+  hero_description: "DUMMY",
+  hero_short_description: "DUMMY",
   hero_id: 1,
-  hero_first_name: "Deepanshu",
-  hero_last_name: "Gulia",
-  hero_other_words: ["code", "create", "automate", "repeat"],
-  hero_greeting: "Hello, I'm",
+  hero_first_name: "DUMMY",
+  hero_last_name: "DUMMY",
+  hero_other_words: ["DUMMY", "DUMMY", "DUMMY", "DUMMY"],
+  hero_greeting: "DUMMY",
+  hero_misc: {
+    about_section_heading: {
+      index: "00",
+      eyebrow: "DUMMY",
+      title: "DUMMY",
+    },
+  },
 };
 
 const initialState: HeroSectionState = {

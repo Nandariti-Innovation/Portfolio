@@ -27,35 +27,48 @@ const App = ({ pageDataLoading }: { pageDataLoading: boolean }) => {
   return (
     <main ref={pageRef} aria-busy={isLoading}>
       {isLoading && (
-        <div
-          className="scene-loader"
-          style={{ zIndex: 100 }}
-        >
+        <div className="scene-loader" style={{ zIndex: 100 }}>
           <div className="loader-content">
-          <img
-            src="/svg/typing_code_loader.svg"
-            alt="Loading portfolio…"
-            width={640}
-            height={420}
-            className="loader-icon"
-          />
-          <div className="loader-progress">
-            <p className="loader-status" role="status" aria-live="polite">{loadingMessage}</p>
-            <div
-              className="loader-track"
-              role="progressbar"
-              aria-label={hasAssetProgress ? "3D asset loading progress" : loadingMessage}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={hasAssetProgress ? Math.round(assetProgress) : undefined}
-            >
-              <span
-                className={hasAssetProgress ? "loader-fill" : "loader-fill loader-indeterminate"}
-                style={hasAssetProgress ? { width: `${assetProgress}%` } : undefined}
-              />
+            <img
+              src="/svg/typing_code_loader.svg"
+              alt="Loading portfolio…"
+              width={640}
+              height={420}
+              className="loader-icon"
+            />
+            <div className="loader-progress">
+              <p className="loader-status" role="status" aria-live="polite">
+                {loadingMessage}
+              </p>
+              <div
+                className="loader-track"
+                role="progressbar"
+                aria-label={
+                  hasAssetProgress
+                    ? "3D asset loading progress"
+                    : loadingMessage
+                }
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={
+                  hasAssetProgress ? Math.round(assetProgress) : undefined
+                }
+              >
+                <span
+                  className={
+                    hasAssetProgress
+                      ? "loader-fill"
+                      : "loader-fill loader-indeterminate"
+                  }
+                  style={
+                    hasAssetProgress
+                      ? { width: `${assetProgress}%` }
+                      : undefined
+                  }
+                />
+              </div>
+              <p className="loader-hint">Good things take a moment.</p>
             </div>
-            <p className="loader-hint">Good things take a moment.</p>
-          </div>
           </div>
         </div>
       )}
