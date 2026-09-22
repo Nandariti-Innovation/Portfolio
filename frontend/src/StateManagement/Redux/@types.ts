@@ -16,6 +16,7 @@ export type SkillsItem = {
 
 export type ProjectItem = {
   project_id?: number;
+  case_study_template_key?: string | null;
   project_name: string;
   project_image: string;
   project_features: string[];

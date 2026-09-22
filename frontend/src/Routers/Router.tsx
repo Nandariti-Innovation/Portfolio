@@ -22,6 +22,7 @@ const Auth = lazy(() => import("@/Pages/Auth"));
 const Dashboard = lazy(() => import("@/Pages/Dashboard"));
 const DashboardStorage = lazy(() => import("@/Pages/Dashboard/Storage"));
 const DashboardProjects = lazy(() => import("@/Pages/Dashboard/Projects"));
+const DashboardCaseStudyTemplates = lazy(() => import("@/Pages/Dashboard/CaseStudyTemplates"));
 const DashboardExperience = lazy(() => import("@/Pages/Dashboard/Experience"));
 const DashboardQueries = lazy(() => import("@/Pages/Dashboard/Queries"));
 const DashboardBlogs = lazy(() => import("@/Pages/Dashboard/Blogs"));
@@ -53,6 +54,7 @@ export const Router = ({ pageDataLoading }: { pageDataLoading: boolean }) => {
             <Route path="queries" element={<DashboardQueries />} />
             <Route path="media" element={<DashboardStorage />} />
             <Route path="projects" element={<DashboardProjects />} />
+            <Route path="case-study-templates" element={<DashboardCaseStudyTemplates />} />
             <Route path="experience" element={<DashboardExperience />} />
             <Route path="sections" element={<DashboardSections />} />
             <Route path="sections/:sectionKey" element={<DashboardSections />} />

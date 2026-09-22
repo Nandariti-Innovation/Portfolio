@@ -13,6 +13,7 @@ import {
   LucideProps,
   Rocket,
   Layers3,
+  LayoutTemplate,
   Settings,
   User,
   X,
@@ -27,6 +28,7 @@ const navItems: NavItemsTypes[] = [
   { name: "Queries", path: "/dashboard/queries", icon: Inbox },
   { name: "Storage", path: "/dashboard/media", icon: Image },
   { name: "Projects", path: "/dashboard/projects", icon: Rocket },
+  { name: "Case study templates", path: "/dashboard/case-study-templates", icon: LayoutTemplate },
   {
     name: "Experience",
     path: "/dashboard/experience",
