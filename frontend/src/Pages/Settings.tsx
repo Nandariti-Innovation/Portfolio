@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 import { FileText, LayoutTemplate, Settings2 } from "lucide-react";
 import { settingContext } from "@/StateManagement/ContextAPI/SettingContext/SettingContext";
 import { HeadingsEditor } from "./Settings/HeadingsEditor";
+import { TemplatesPanel } from "./Settings/TemplatesPanel";
 
 type Panel = "headings" | "templates";
 
@@ -36,12 +37,7 @@ export const Settings = () => {
           </nav>
           <div className="min-w-0">
             <div hidden={panel !== "headings"}><HeadingsEditor onUnsavedChange={setUnsaved} /></div>
-            {panel === "templates" && <section className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-              <h2 className="text-lg font-semibold">Templates</h2>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-gray-500 dark:text-gray-400">
-                Template management is coming next. New sections stay inactive until a compatible template is assigned.
-              </p>
-            </section>}
+            {panel === "templates" && <TemplatesPanel />}
           </div>
         </div>
       </div>
