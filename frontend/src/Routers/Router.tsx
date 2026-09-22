@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from "react";
 import { VisitorTracker } from "@/components/VisitorTracker";
 import {
   Navigate,
+  Outlet,
   Route,
   Routes,
   useLocation,
@@ -36,7 +37,7 @@ export const Router = ({ pageDataLoading }: { pageDataLoading: boolean }) => {
   return (
     <>
       <VisitorTracker />
-      <RouteErrorBoundary key={location.pathname}>
+      <RouteErrorBoundary key={location.pathname.startsWith("/dashboard") ? "dashboard" : location.pathname}>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
           <Route index element={<HomePage pageDataLoading={pageDataLoading} />} />
@@ -45,89 +46,19 @@ export const Router = ({ pageDataLoading }: { pageDataLoading: boolean }) => {
           <Route path="project/:projectID" element={<CaseStudy />} />
           <Route path="sitemap" element={<Sitemap />} />
           <Route path="contact" element={<ContactModalRoute />} />
-          <Route path="dashboard">
-            <Route path="auth" element={<Auth />} />
-            <Route
-              path="queries"
-              element={
-                <PrivateRouter>
-                  <DashboardQueries />
-                </PrivateRouter>
-              }
-            />
-            <Route
-              index
-              element={
-                <PrivateRouter>
-                  <Dashboard />
-                </PrivateRouter>
-              }
-            />
-            <Route
-              path="media"
-              element={
-                <PrivateRouter>
-                  <DashboardStorage />
-                </PrivateRouter>
-              }
-            />
-            <Route
-              path="projects"
-              element={
-                <PrivateRouter>
-                  <DashboardProjects />
-                </PrivateRouter>
-              }
-            />
-            <Route
-              path="experience"
-              element={
-                <PrivateRouter>
-                  <DashboardExperience />
-                </PrivateRouter>
-              }
-            />
-            <Route
-              path="blogs"
-              element={
-                <PrivateRouter>
-                  <DashboardBlogs />
-                </PrivateRouter>
-              }
-            />
-            <Route
-              path="blogs/new"
-              element={
-                <PrivateRouter>
-                  <BlogEditor />
-                </PrivateRouter>
-              }
-            />
-            <Route
-              path="blogs/:blogId/edit"
-              element={
-                <PrivateRouter>
-                  <BlogEditor />
-                </PrivateRouter>
-              }
-            />
-            <Route
-              path="blogs/:blogId/preview"
-              element={
-                <PrivateRouter>
-                  <BlogPreview />
-                </PrivateRouter>
-              }
-            />
-            <Route
-              path="setting"
-              element={
-                <PrivateRouter>
-                  <Settings />
-                </PrivateRouter>
-              }
-            />
-            </Route>
+          <Route path="dashboard/auth" element={<Auth />} />
+          <Route path="dashboard" element={<PrivateRouter />}>
+            <Route index element={<Dashboard />} />
+            <Route path="queries" element={<DashboardQueries />} />
+            <Route path="media" element={<DashboardStorage />} />
+            <Route path="projects" element={<DashboardProjects />} />
+            <Route path="experience" element={<DashboardExperience />} />
+            <Route path="blogs" element={<DashboardBlogs />} />
+            <Route path="blogs/new" element={<BlogEditor />} />
+            <Route path="blogs/:blogId/edit" element={<BlogEditor />} />
+            <Route path="blogs/:blogId/preview" element={<BlogPreview />} />
+            <Route path="setting" element={<Settings />} />
+          </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
@@ -138,6 +69,7 @@ export const Router = ({ pageDataLoading }: { pageDataLoading: boolean }) => {
 
 interface RouteErrorBoundaryProps {
   children: React.ReactNode;
+  fallback?: React.ReactNode;
 }
 
 interface RouteErrorBoundaryState {
@@ -159,7 +91,7 @@ class RouteErrorBoundary extends React.Component<
   }
 
   render() {
-    if (this.state.error) return <RouteErrorFallback />;
+    if (this.state.error) return this.props.fallback ?? <RouteErrorFallback />;
     return this.props.children;
   }
 }
@@ -175,6 +107,25 @@ const RouteFallback = () => (
       <span className="text-sm font-medium">Loading page…</span>
     </div>
   </div>
+);
+
+const DashboardRouteFallback = () => (
+  <main className="grid h-full min-w-0 flex-1 place-items-center bg-background text-primary dark:bg-darkthemebg" role="status" aria-live="polite">
+    <div className="flex flex-col items-center gap-3">
+      <span className="size-8 animate-spin rounded-full border-4 border-current border-r-transparent motion-reduce:animate-none" />
+      <span className="text-sm font-medium">Loading page…</span>
+    </div>
+  </main>
+);
+
+const DashboardRouteErrorFallback = () => (
+  <main className="grid h-full min-w-0 flex-1 place-items-center bg-background px-6 text-center text-gray-900 dark:bg-darkthemebg dark:text-white">
+    <div className="max-w-md">
+      <h1 className="text-xl font-semibold">This dashboard page could not be loaded.</h1>
+      <p className="mt-2 text-sm text-gray-500 dark:text-gray-300">Please try again.</p>
+      <button type="button" onClick={() => window.location.reload()} className="mt-5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white">Reload page</button>
+    </div>
+  </main>
 );
 
 const RouteErrorFallback = () => (
@@ -240,8 +191,9 @@ const ContactModalRoute = () => {
   return null;
 };
 
-const PrivateRouter: React.FC<PrivateRouterProps> = ({ children }) => {
+const PrivateRouter = () => {
   const { isAuth } = useSelector((state: RootState) => state.authentication);
+  const location = useLocation();
 
   if (isAuth == false) return <Auth />;
   return (
@@ -249,12 +201,12 @@ const PrivateRouter: React.FC<PrivateRouterProps> = ({ children }) => {
       <Header />
       <div className="dashboard-content flex w-full items-center h-[calc(100vh-var(--spacing-navbar))]">
         <Sidebar />
-        {children}
+        <RouteErrorBoundary key={location.pathname} fallback={<DashboardRouteErrorFallback />}>
+          <Suspense fallback={<DashboardRouteFallback />}>
+            <Outlet />
+          </Suspense>
+        </RouteErrorBoundary>
       </div>
     </div>
   );
 };
-
-interface PrivateRouterProps {
-  children: React.ReactNode;
-}
