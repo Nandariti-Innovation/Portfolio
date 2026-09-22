@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, BookOpenText, BriefcaseBusiness, LayoutTemplate, Loader2, RefreshCw, Rocket } from "lucide-react";
+import { Dialog } from "radix-ui";
 import supabase from "@/Superbase/client";
 import { TEMPLATE_SLOTS, type TemplateDefinition, type TemplateSlot, type TemplateVariant } from "@/features/homepageSections/templates";
 
@@ -53,7 +54,7 @@ export const TemplatesPanel = () => {
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div><h2 id="templates-title" className="text-xl font-semibold">Homepage templates</h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Compose a layout once, then assign it to any section with compatible fields.</p></div>
-      <div className="flex gap-2"><button type="button" onClick={() => setEditing("new")} className="rounded-xl bg-primary px-4 py-2 text-sm text-white">New template</button>
+      <div className="flex gap-2"><button type="button" onClick={() => setEditing("new")} className="cursor-pointer rounded-xl bg-primary px-4 py-2 text-sm text-white">New template</button>
       <button type="button" aria-label="Refresh templates" disabled={loading} onClick={() => { setLoading(true); setRefresh((value) => value + 1); }}
         className="grid size-10 place-items-center rounded-xl border border-gray-300 bg-white text-gray-600 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"><RefreshCw size={17} className={loading ? "animate-spin" : ""}/></button></div>
     </div>
@@ -63,8 +64,15 @@ export const TemplatesPanel = () => {
       : templates.length === 0 ? <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-gray-700 dark:bg-gray-800"><LayoutTemplate size={28} className="mx-auto text-gray-400"/><p className="mt-3 font-medium">No templates found</p><p className="mt-1 text-sm text-gray-500">The template catalog has no records yet.</p></div>
       : <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
         {templates.map((template) => <TemplateCard key={template.template_key} template={template} onEdit={() => setEditing(template)}/>)}</div>}
-    {editing && <TemplateForm key={editing === "new" ? "new" : editing.template_key} original={editing === "new" ? null : editing}
-      onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setLoading(true); setRefresh((value) => value + 1); }}/>}
+    {editing && <Dialog.Root open onOpenChange={(open) => { if (!open) setEditing(null); }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[70] bg-slate-950/70" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-[80] max-h-[calc(100dvh-2rem)] w-[min(760px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white shadow-2xl outline-none dark:bg-gray-800">
+          <TemplateForm key={editing === "new" ? "new" : editing.template_key} original={editing === "new" ? null : editing}
+            onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setLoading(true); setRefresh((value) => value + 1); }}/>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>}
   </section>;
 };
 
@@ -123,8 +131,8 @@ function TemplateForm({ original, onClose, onSaved }: { original: SectionTemplat
     setBusy(false);
   };
   return <div className="rounded-2xl border border-primary/40 bg-white p-5 dark:bg-gray-800">
-    <h3 className="text-lg font-semibold">{original ? `Edit ${original.display_name}` : "Create a reusable template"}</h3>
-    <p className="mt-1 text-sm text-gray-500">Layouts use supported building blocks. Each section maps its table fields to the selected slots.</p>
+    <Dialog.Title className="text-lg font-semibold">{original ? `Edit ${original.display_name}` : "Create a reusable template"}</Dialog.Title>
+    <Dialog.Description className="mt-1 text-sm text-gray-500">Layouts use supported building blocks. Each section maps its table fields to the selected slots.</Dialog.Description>
     <div className="mt-4 grid gap-4 sm:grid-cols-2">
       <label className="text-sm">Template key<input className={input} value={key} disabled={!!original} maxLength={64} onChange={e => setKey(e.target.value)}/></label>
       <label className="text-sm">Display name<input className={input} value={name} maxLength={120} onChange={e => setName(e.target.value)}/></label>
