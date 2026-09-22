@@ -3,11 +3,9 @@ import { Suspense, useCallback, useRef, useState } from "react";
 import { Navigation } from "@/components/Navigation";
 import { PortfolioScene } from "@/components/scene/PortfolioScene";
 import { About } from "@/components/sections/About";
-import { Blog } from "@/components/sections/Blog";
 import { Contact } from "@/components/sections/Contact";
-import { Experience } from "@/components/sections/Experience";
 import { Hero } from "@/components/sections/Hero";
-import { Projects } from "@/components/sections/Projects";
+import { DynamicSections } from "@/components/sections/DynamicSections";
 import { useScrollProgress } from "@/hooks/useScrollProgress";
 
 const App = ({ pageDataLoading }: { pageDataLoading: boolean }) => {
@@ -80,9 +78,7 @@ const App = ({ pageDataLoading }: { pageDataLoading: boolean }) => {
       <div className="page-content">
         <Hero />
         <About />
-        <Experience />
-        <Projects />
-        <Blog />
+        <DynamicSections />
         <Contact />
       </div>
     </main>

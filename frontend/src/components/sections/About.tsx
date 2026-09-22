@@ -7,7 +7,6 @@ export const About = () => {
   const { HeroSection } = useSelector((state: RootState) => state.herosection);
   const { skills } = useSelector((state: RootState) => state.skills);
   const heading = HeroSection.hero_misc.about_section_heading as HeadingType;
-  console.log(HeroSection);
 
   return (
     <section className="panel split-panel" id="about">

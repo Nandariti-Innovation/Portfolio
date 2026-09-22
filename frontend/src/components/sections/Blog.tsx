@@ -1,25 +1,19 @@
 import { ArrowUpRight } from "lucide-react";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/StateManagement/Redux/reduxStore";
-import { SectionHeader } from "./SectionHeader";
-
-type HeadingType = { index: string; eyebrow: string; title: string };
+import { HomepageSectionHeading } from "./HomepageSectionHeading";
+import { getSectionConfiguration } from "@/features/homepageSections/manifest";
 
 export const Blog = () => {
   const blogs = useSelector((state: RootState) => state.homepageBlogs.items);
   const { setting } = useSelector((state: RootState) => state.settings);
-  const heading = setting.find((item) => item.setting_name === "headings")
-    ?.setting_object.blog as HeadingType | undefined;
+  const section = getSectionConfiguration(setting, "blog");
 
-  if (!blogs.length) return null;
+  if (!section?.enabled || !blogs.length) return null;
 
   return (
     <section className="panel content-panel" id="blog">
-      <SectionHeader
-        index={heading?.index || "04"}
-        eyebrow={heading?.eyebrow || "FIELD NOTES"}
-        title={heading?.title || "Writing from inside the build."}
-      />
+      <HomepageSectionHeading section={section} />
       <div className="post-list">
         {blogs.map((post) => (
           <article key={post.id}>
