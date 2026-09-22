@@ -12,6 +12,7 @@ import {
   LogOut,
   LucideProps,
   Rocket,
+  Layers3,
   Settings,
   User,
   X,
@@ -32,6 +33,7 @@ const navItems: NavItemsTypes[] = [
     icon: BriefcaseBusiness,
   },
   { name: "Blogs", path: "/dashboard/blogs", icon: BookOpenText },
+  { name: "Sections", path: "/dashboard/sections", icon: Layers3 },
   { name: "Settings", path: "/dashboard/setting", icon: Settings },
 ];
 

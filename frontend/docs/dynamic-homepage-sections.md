@@ -1,0 +1,30 @@
+# Dynamic homepage sections
+
+The homepage keeps Navigation, Hero, About and Contact in their fixed positions. Between About and Contact, it renders the enabled entries in the `settings` row named `headings`, in their configured order. Projects, experience and blog now use this path too. Their existing content tables remain intact.
+
+## Data flow
+
+1. The browser makes one `get_homepage_payload` request.
+2. The RPC returns public homepage shell data and `dynamic_sections` (`sections` plus reusable `templates`).
+3. `homepageSections` stores those ordered sections and templates in Redux. No new reducer is needed for a new section.
+4. The renderer reads the selected template layout, maps its slots through the section's `field_bindings`, and renders each item. The template decides whether to show the heading.
+
+Existing keys `projects`, `work_experience`, and `blogs` remain in the RPC response temporarily for previously deployed frontend builds. The new homepage consumes only `dynamic_sections` for those three sections. Only published blog summaries, featured projects, and limited experience records are included. Contact submissions and visitor logs are never fetched.
+
+## Reusing a template
+
+A template defines a presentation (`cards`, `timeline`, or `list`), visible slots, heading visibility, and card columns. It has no dependency on a section's table name. Each section binds its own columns to the template's slots. For example, `project.title → projects.project_name` and `design.title → design.name` can share the same template. A link slot can point to a URL column or an internal route such as `/project/` followed by a bound ID. Templates are declarative JSON; no stored executable component code is evaluated.
+
+## Admin steps
+
+1. Open **Settings → Headings → New section**. Supply its key, heading and table fields. The RPC creates an owner-managed table and an inactive heading entry. This operation requires the authenticated owner's `portfolio_owner` app metadata claim.
+2. Open **Dashboard → Sections → [section]**. Add records and mark the records that should be public as visible. The table's other records remain private.
+3. Open **Settings → Templates** to create a reusable layout, or choose an existing one.
+4. Back in **Settings → Headings**, choose that template and map at least its required title slot to a compatible table column. Save. Turn on **Show on homepage**, then save again.
+5. Reload the homepage to inspect the ordered section. Its data appears only when both the section is enabled and its record is visible. Public users can access only published templates and visible rows.
+
+## Database rollout
+
+Apply `supabase/migrations/20260922150000_dynamic_homepage_sections.sql` before deploying the new frontend. The migration preserves legacy RPC fields during rollout. The old hardcoded homepage can keep using them until the new build is published. It does not delete `projects`, `work_experience`, `blogs`, `model.glb`, or any other existing asset. Use the normal Supabase migration history to prevent duplicate application.
+
+Template layouts are intentionally limited to supported components. A genuinely new visual primitive requires a frontend change; Settings can combine and reuse the existing layouts without a build. The RPC caps new section data to 12 visible items per section. Detail pages continue their independent queries.

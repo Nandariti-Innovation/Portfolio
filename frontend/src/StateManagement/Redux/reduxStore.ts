@@ -12,6 +12,7 @@ import experienceReducer from "./slices/experience";
 import mentorshipReducer from "./slices/mentorship";
 import settingReducer from "./slices/settings";
 import homepageBlogsReducer from "./slices/homepageBlogs";
+import homepageSectionsReducer from "./slices/homepageSections";
 
 export const store = configureStore({
   reducer: {
@@ -28,6 +29,7 @@ export const store = configureStore({
     mentorship: mentorshipReducer,
     settings: settingReducer,
     homepageBlogs: homepageBlogsReducer,
+    homepageSections: homepageSectionsReducer,
   },
 });
 

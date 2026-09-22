@@ -11,6 +11,7 @@ import {
   type HomepageSectionConfiguration,
   type SectionHeading,
 } from "@/features/homepageSections/manifest";
+import { validBinding, type TemplateDefinition } from "@/features/homepageSections/templates";
 import { NewSectionDialog } from "./NewSectionDialog";
 
 const columns = "setting_id,setting_name,setting_object,schema_version,created_at,updated_at";
@@ -27,12 +28,17 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
   const [notice, setNotice] = useState("");
   const [creating, setCreating] = useState(false);
   const [newSectionDirty, setNewSectionDirty] = useState(false);
+  const [templates, setTemplates] = useState<TemplateDefinition[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
-    const { data, error: failure } = await supabase.from("settings")
-      .select(columns).eq("setting_name", "headings").single();
+    const [{ data, error: failure }, templateResult] = await Promise.all([
+      supabase.from("settings").select(columns).eq("setting_name", "headings").single(),
+      supabase.from("section_templates").select("template_key,display_name,description,layout_key,layout_definition,slots,is_builtin,is_published"),
+    ]);
+    if (templateResult.error) { setError(templateResult.error.message); setLoading(false); return false; }
+    setTemplates((templateResult.data || []) as TemplateDefinition[]);
     if (failure || !data) {
       setError(failure?.message || "The headings setting could not be found.");
       setLoading(false);
@@ -90,8 +96,17 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
     if (ordered.some((item) => [item.heading.index, item.heading.eyebrow, item.heading.title].some((value) => /<[^>]*>/.test(value)))) {
       errors.push("Headings must be plain text without HTML.");
     }
+    for (const item of ordered) {
+      if (!item.enabled) continue;
+      const template = templates.find(t => t.template_key === item.template_key && t.is_published);
+      if (!template) { errors.push(`${item.section_key}: choose an available template.`); continue; }
+      const fields = item.data_schema.fields.map(field => field.key);
+      if (template.slots.some(slot => slot.required && !validBinding(item.field_bindings?.[slot.key], fields))) {
+        errors.push(`${item.section_key}: bind all required template slots to table fields.`);
+      }
+    }
     return errors;
-  }, [draft, ordered]);
+  }, [draft, ordered, templates]);
 
   const patch = (change: Partial<HomepageSectionConfiguration>) => {
     setDraft((current) => ({ ...current, [selected]: { ...current[selected], ...change } }));
@@ -168,11 +183,34 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
               <div className="mt-5 grid gap-4 border-t border-gray-100 pt-5 dark:border-gray-700 sm:grid-cols-2 sm:items-end">
                 <label className="text-sm font-medium">Display order<input type="number" min={1} step={1} className={inputClass} value={section.order} onChange={(event) => patch({ order: Number(event.target.value) })}/></label>
                 <label className="flex items-center gap-3 rounded-xl border border-gray-200 p-3 text-sm dark:border-gray-700">
-                  <input type="checkbox" checked={section.enabled} disabled={!section.template_key} onChange={(event) => patch({ enabled: event.target.checked })}/>
+                  <input type="checkbox" checked={section.enabled} disabled={!section.template_key || !templates.some(t => t.template_key === section.template_key && t.is_published)} onChange={(event) => patch({ enabled: event.target.checked })}/>
                   <span><strong className="block font-medium">Show on homepage</strong><small className="text-gray-500 dark:text-gray-400">{section.template_key ? "Toggle this section’s visibility." : "A template must be assigned first."}</small></span>
                 </label>
               </div>
-              <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">Template: {section.template_key ?? "Not assigned"} · {section.data_schema.fields.length} data fields</p>
+              <div className="mt-5 border-t border-gray-100 pt-5 dark:border-gray-700">
+                <label className="text-sm font-medium">Reusable template<select className={inputClass} value={section.template_key ?? ""} onChange={e => patch({ template_key: e.target.value || null, enabled: false, field_bindings: {} })}>
+                  <option value="">Select a template</option>{templates.filter(t => t.is_published).map(t => <option key={t.template_key} value={t.template_key}>{t.display_name}</option>)}</select></label>
+                {templates.find(t => t.template_key === section.template_key) && <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {templates.find(t => t.template_key === section.template_key)!.slots.map(slot => {
+                    const binding = section.field_bindings?.[slot.key];
+                    const field = typeof binding === "string" ? binding : binding?.field || "";
+                    const compatible = section.data_schema.fields.filter(item => slot.type === "list" ? item.type === "string_array" :
+                      slot.type === "date" ? ["date","datetime"].includes(item.type) :
+                      slot.type === "image" ? ["image","url","string"].includes(item.type) :
+                      slot.type === "link" ? ["url","string","integer","uuid"].includes(item.type) :
+                      ["string","text","integer","number"].includes(item.type));
+                    return <label key={slot.key} className="text-sm capitalize">{slot.key.replaceAll("_", " ")}{slot.required ? " *" : ""}
+                      <select className={inputClass} value={field} onChange={e => {
+                        const next = { ...section.field_bindings };
+                        if (e.target.value) next[slot.key] = typeof binding === "object" ? { ...binding, field: e.target.value } : e.target.value;
+                        else delete next[slot.key];
+                        patch({ field_bindings: next, enabled: false });
+                      }}><option value="">No field</option>{compatible.map(item => <option key={item.key} value={item.key}>{item.label} ({item.key})</option>)}</select>
+                    </label>;
+                  })}
+                </div>}
+                <p className="mt-3 text-xs text-gray-500">Source table: {section.table_name} · {section.data_schema.fields.length} data fields. Publish content in Sections before enabling it.</p>
+              </div>
             </article>
             <div className="rounded-2xl border border-gray-700 bg-[#0b0b0b] p-5 text-white sm:p-7">
               <p className="mb-4 text-xs uppercase tracking-widest text-gray-400">Live heading preview</p>

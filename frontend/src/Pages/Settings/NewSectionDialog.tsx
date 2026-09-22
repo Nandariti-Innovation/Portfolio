@@ -15,7 +15,7 @@ type Props = {
 };
 
 const identifier = /^[a-z][a-z0-9_]{0,39}$/;
-const reservedSections = new Set(["about", "footer", "hero", "settings", "users", "profiles"]);
+const reservedSections = new Set(["about", "contact", "footer", "hero", "navbar", "navigation", "settings", "users", "profiles", "projects"]);
 const reservedColumns = new Set(["id", "display_order", "is_visible", "created_at", "updated_at"]);
 const types: { value: SectionFieldType; label: string }[] = [
   { value: "string", label: "Short text" }, { value: "text", label: "Long text" },

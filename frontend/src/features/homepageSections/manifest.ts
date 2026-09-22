@@ -31,16 +31,9 @@ export const SECTION_INPUT_TYPES = [
   "select",
 ] as const;
 
-export const REGISTERED_SECTION_TEMPLATES = [
-  "experience_v1",
-  "project_v1",
-  "blog_v1",
-] as const;
-
 export type SectionFieldType = (typeof SECTION_FIELD_TYPES)[number];
 export type SectionInputType = (typeof SECTION_INPUT_TYPES)[number];
-export type RegisteredSectionTemplate =
-  (typeof REGISTERED_SECTION_TEMPLATES)[number];
+export type FieldBinding = string | { field: string; prefix: string };
 
 export type SectionHeading = {
   index: string;
@@ -74,9 +67,10 @@ export type HomepageSectionConfiguration = {
   order: number;
   heading: SectionHeading;
   // Inactive sections may await a template. They cannot render until assigned.
-  template_key: RegisteredSectionTemplate | null;
+  template_key: string | null;
   table_name: string;
   data_schema: SectionDataSchema;
+  field_bindings?: Record<string, FieldBinding>;
 };
 
 export type HomepageHeadingManifest = Record<
@@ -99,7 +93,6 @@ export type ParsedHeadingManifest = {
 const identifierPattern = /^[a-z][a-z0-9_]*$/;
 const fieldTypes = new Set<string>(SECTION_FIELD_TYPES);
 const inputTypes = new Set<string>(SECTION_INPUT_TYPES);
-const templateKeys = new Set<string>(REGISTERED_SECTION_TEMPLATES);
 
 export const DEFAULT_HEADING_MANIFEST =
   headingManifestV2 as HomepageHeadingManifest;
@@ -209,8 +202,8 @@ function parseSection(
   if (sectionKey && !identifierPattern.test(sectionKey)) {
     errors.push(error(objectKey, "section_key", "has an invalid format"));
   }
-  if (templateKey !== null && (typeof templateKey !== "string" || !templateKeys.has(templateKey))) {
-    errors.push(error(objectKey, "template_key", "is not registered"));
+  if (templateKey !== null && (typeof templateKey !== "string" || !identifierPattern.test(templateKey))) {
+    errors.push(error(objectKey, "template_key", "has an invalid format"));
   }
   if (enabled && templateKey === null) {
     errors.push(error(objectKey, "template_key", "must be assigned before enabling"));
@@ -221,6 +214,13 @@ function parseSection(
 
   const heading = parseHeading(value.heading, objectKey, errors);
   const dataSchema = parseDataSchema(value.data_schema, objectKey, errors);
+  const bindings = value.field_bindings;
+  if (bindings !== undefined && (!isRecord(bindings) || Object.entries(bindings).some(([slot, binding]) =>
+    !identifierPattern.test(slot) || !(typeof binding === "string" && identifierPattern.test(binding)) &&
+    !(isRecord(binding) && typeof binding.field === "string" && identifierPattern.test(binding.field) &&
+      typeof binding.prefix === "string" && (binding.prefix.startsWith("/") && !binding.prefix.startsWith("//"))))) ) {
+    errors.push(error(objectKey, "field_bindings", "contains an invalid field mapping"));
+  }
 
   if (
     errors.length !== before ||
@@ -240,9 +240,10 @@ function parseSection(
     enabled,
     order,
     heading,
-    template_key: templateKey as RegisteredSectionTemplate | null,
+    template_key: templateKey as string | null,
     table_name: tableName,
     data_schema: dataSchema,
+    ...(bindings !== undefined ? { field_bindings: bindings as Record<string, FieldBinding> } : {}),
   };
 }
 

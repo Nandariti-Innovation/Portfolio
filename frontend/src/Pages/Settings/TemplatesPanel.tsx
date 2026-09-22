@@ -1,15 +1,11 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight, BookOpenText, BriefcaseBusiness, LayoutTemplate, Loader2, RefreshCw, Rocket } from "lucide-react";
 import supabase from "@/Superbase/client";
+import { TEMPLATE_SLOTS, type TemplateDefinition, type TemplateSlot, type TemplateVariant } from "@/features/homepageSections/templates";
 
-type SectionTemplate = {
-  template_key: string;
-  display_name: string;
-  description: string;
-  layout_key: string;
+type SectionTemplate = TemplateDefinition & {
   reference_section_key: string | null;
   display_fields: string[];
-  is_builtin: boolean;
 };
 
 const templateIcons = {
@@ -24,12 +20,13 @@ export const TemplatesPanel = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refresh, setRefresh] = useState(0);
+  const [editing, setEditing] = useState<SectionTemplate | null | "new">(null);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       const result = await supabase.from("section_templates")
-        .select("template_key,display_name,description,layout_key,reference_section_key,display_fields,is_builtin")
+        .select("template_key,display_name,description,layout_key,reference_section_key,display_fields,is_builtin,is_published,layout_definition,slots")
         .order("template_key", { ascending: true });
       if (cancelled) return;
       if (result.error) {
@@ -55,20 +52,23 @@ export const TemplatesPanel = () => {
   return <section aria-labelledby="templates-title" className="space-y-5">
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div><h2 id="templates-title" className="text-xl font-semibold">Homepage templates</h2>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">These layouts are currently used by your Project, Experience and Blog sections.</p></div>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Compose a layout once, then assign it to any section with compatible fields.</p></div>
+      <div className="flex gap-2"><button type="button" onClick={() => setEditing("new")} className="rounded-xl bg-primary px-4 py-2 text-sm text-white">New template</button>
       <button type="button" aria-label="Refresh templates" disabled={loading} onClick={() => { setLoading(true); setRefresh((value) => value + 1); }}
-        className="grid size-10 place-items-center rounded-xl border border-gray-300 bg-white text-gray-600 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"><RefreshCw size={17} className={loading ? "animate-spin" : ""}/></button>
+        className="grid size-10 place-items-center rounded-xl border border-gray-300 bg-white text-gray-600 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"><RefreshCw size={17} className={loading ? "animate-spin" : ""}/></button></div>
     </div>
 
     {loading ? <div role="status" className="flex items-center justify-center gap-3 rounded-2xl border border-gray-200 bg-white py-24 text-gray-500 dark:border-gray-700 dark:bg-gray-800"><Loader2 size={20} className="animate-spin"/>Loading templates…</div>
       : error ? <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">Unable to load templates: {error}</div>
       : templates.length === 0 ? <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-gray-700 dark:bg-gray-800"><LayoutTemplate size={28} className="mx-auto text-gray-400"/><p className="mt-3 font-medium">No templates found</p><p className="mt-1 text-sm text-gray-500">The template catalog has no records yet.</p></div>
       : <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
-        {templates.map((template) => <TemplateCard key={template.template_key} template={template}/>)}</div>}
+        {templates.map((template) => <TemplateCard key={template.template_key} template={template} onEdit={() => setEditing(template)}/>)}</div>}
+    {editing && <TemplateForm key={editing === "new" ? "new" : editing.template_key} original={editing === "new" ? null : editing}
+      onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setLoading(true); setRefresh((value) => value + 1); }}/>}
   </section>;
 };
 
-const TemplateCard = ({ template }: { template: SectionTemplate }) => {
+const TemplateCard = ({ template, onEdit }: { template: SectionTemplate; onEdit: () => void }) => {
   const Icon = templateIcons[template.layout_key as keyof typeof templateIcons] || LayoutTemplate;
 
   return <article className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
@@ -85,10 +85,66 @@ const TemplateCard = ({ template }: { template: SectionTemplate }) => {
         <p className="text-gray-500 dark:text-gray-400">Used by <span className="font-semibold capitalize text-gray-800 dark:text-gray-100">{template.reference_section_key || "No section yet"}</span></p>
         <p className="mt-3 font-medium text-gray-700 dark:text-gray-200">Fields displayed ({template.display_fields.length})</p>
         <div className="mt-2 flex flex-wrap gap-1.5">{template.display_fields.map((field) => <span key={field} className="rounded-md bg-gray-100 px-2 py-1 font-mono text-[10px] text-gray-600 dark:bg-gray-900 dark:text-gray-300">{field}</span>)}</div>
+        <button type="button" onClick={onEdit} className="mt-4 rounded-lg border border-gray-300 px-3 py-2 text-sm text-primary dark:border-gray-600">Edit layout</button>
       </div>
     </div>
   </article>;
 };
+
+const options = Object.keys(TEMPLATE_SLOTS) as TemplateSlot[];
+const input = "mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-900";
+
+function TemplateForm({ original, onClose, onSaved }: { original: SectionTemplate | null; onClose: () => void; onSaved: () => void }) {
+  const [key, setKey] = useState(original?.template_key || "");
+  const [name, setName] = useState(original?.display_name || "");
+  const [description, setDescription] = useState(original?.description || "");
+  const [variant, setVariant] = useState<TemplateVariant>(original?.layout_definition.variant || "cards");
+  const [fields, setFields] = useState<TemplateSlot[]>(original?.layout_definition.fields || ["image", "title", "description"]);
+  const [showHeading, setShowHeading] = useState(original?.layout_definition.show_heading ?? true);
+  const [columns, setColumns] = useState(original?.layout_definition.columns || 3);
+  const [published, setPublished] = useState(original?.is_published ?? true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const save = async () => {
+    if (!/^[a-z][a-z0-9_]{0,63}$/.test(key) || !name.trim() || !description.trim() ||
+        name.trim().length > 120 || description.trim().length > 500 || !fields.includes("title")) {
+      setError("Provide a valid key, name, description, and title slot."); return;
+    }
+    setBusy(true); setError("");
+    const definition = { variant, show_heading: showHeading, columns, fields };
+    const slots = fields.map((slot) => ({ key: slot,
+      type: original?.slots.find(existing => existing.key === slot)?.type || TEMPLATE_SLOTS[slot],
+      required: slot === "title" }));
+    const patch = { display_name: name.trim(), description: description.trim(), layout_key: variant,
+      display_fields: fields, layout_definition: definition, slots, is_published: published, updated_at: new Date().toISOString() };
+    const result = original ? await supabase.from("section_templates").update(patch).eq("template_key", key).select("template_key").single() :
+      await supabase.from("section_templates").insert({ ...patch, template_key: key, is_builtin: false }).select("template_key").single();
+    if (result.error) setError(result.error.message); else onSaved();
+    setBusy(false);
+  };
+  return <div className="rounded-2xl border border-primary/40 bg-white p-5 dark:bg-gray-800">
+    <h3 className="text-lg font-semibold">{original ? `Edit ${original.display_name}` : "Create a reusable template"}</h3>
+    <p className="mt-1 text-sm text-gray-500">Layouts use supported building blocks. Each section maps its table fields to the selected slots.</p>
+    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <label className="text-sm">Template key<input className={input} value={key} disabled={!!original} maxLength={64} onChange={e => setKey(e.target.value)}/></label>
+      <label className="text-sm">Display name<input className={input} value={name} maxLength={120} onChange={e => setName(e.target.value)}/></label>
+      <label className="text-sm sm:col-span-2">Description<textarea className={input} value={description} maxLength={500} onChange={e => setDescription(e.target.value)}/></label>
+      <label className="text-sm">Layout<select className={input} value={variant} onChange={e => setVariant(e.target.value as TemplateVariant)}>
+        <option value="cards">Cards</option><option value="timeline">Timeline</option><option value="list">Editorial list</option></select></label>
+      {variant === "cards" && <label className="text-sm">Columns<select className={input} value={columns} onChange={e => setColumns(Number(e.target.value))}>
+        <option value={2}>Two</option><option value={3}>Three</option></select></label>}
+    </div>
+    <p className="mt-4 text-sm font-medium">Template slots</p>
+    <div className="mt-2 flex flex-wrap gap-3">{options.map(slot => <label key={slot} className="flex items-center gap-2 text-sm capitalize">
+      <input type="checkbox" checked={fields.includes(slot)} disabled={slot === "title"} onChange={e => setFields(current => e.target.checked ? [...current, slot] : current.filter(item => item !== slot))}/>{slot.replaceAll("_", " ")}</label>)}</div>
+    <div className="mt-4 rounded-xl bg-[#0c0c0c] p-5 text-white"><p className="mb-4 text-xs uppercase text-[#ff6b24]">Layout preview</p><TemplatePreview layout={variant === "cards" ? "project_grid" : variant === "timeline" ? "experience_timeline" : "blog_list"}/></div>
+    <div className="mt-4 flex flex-wrap gap-5"><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showHeading} onChange={e => setShowHeading(e.target.checked)}/>Show heading</label>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)}/>Available on homepage</label></div>
+    {error && <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>}
+    <div className="mt-5 flex justify-end gap-3"><button type="button" onClick={onClose} className="rounded-lg border px-4 py-2 text-sm">Cancel</button>
+      <button type="button" disabled={busy} onClick={() => void save()} className="rounded-lg bg-primary px-4 py-2 text-sm text-white disabled:opacity-50">{busy ? "Saving…" : "Save template"}</button></div>
+  </div>;
+}
 
 const TemplatePreview = ({ layout }: { layout: string }) => {
   if (layout === "project_grid") return <div className="grid grid-cols-3 gap-2" aria-label="Three featured project cards">

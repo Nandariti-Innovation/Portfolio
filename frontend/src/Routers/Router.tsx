@@ -30,6 +30,7 @@ const BlogPreview = lazy(() => import("@/Pages/Dashboard/Blogs/BlogPreview"));
 const Settings = lazy(() =>
   import("@/Pages/Settings").then((module) => ({ default: module.Settings })),
 );
+const DashboardSections = lazy(() => import("@/Pages/Dashboard/Sections"));
 
 export const Router = ({ pageDataLoading }: { pageDataLoading: boolean }) => {
   const location = useLocation();
@@ -53,6 +54,8 @@ export const Router = ({ pageDataLoading }: { pageDataLoading: boolean }) => {
             <Route path="media" element={<DashboardStorage />} />
             <Route path="projects" element={<DashboardProjects />} />
             <Route path="experience" element={<DashboardExperience />} />
+            <Route path="sections" element={<DashboardSections />} />
+            <Route path="sections/:sectionKey" element={<DashboardSections />} />
             <Route path="blogs" element={<DashboardBlogs />} />
             <Route path="blogs/new" element={<BlogEditor />} />
             <Route path="blogs/:blogId/edit" element={<BlogEditor />} />
