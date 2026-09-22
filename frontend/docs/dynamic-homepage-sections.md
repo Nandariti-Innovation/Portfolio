@@ -25,6 +25,6 @@ A template defines a presentation (`cards`, `timeline`, or `list`), visible slot
 
 ## Database rollout
 
-Apply `supabase/migrations/20260922150000_dynamic_homepage_sections.sql` before deploying the new frontend. The migration preserves legacy RPC fields during rollout. The old hardcoded homepage can keep using them until the new build is published. It does not delete `projects`, `work_experience`, `blogs`, `model.glb`, or any other existing asset. Use the normal Supabase migration history to prevent duplicate application.
+Apply `supabase/migrations/20260922081419_dynamic_homepage_sections.sql` before deploying the new frontend. The migration preserves legacy RPC fields during rollout. The old hardcoded homepage can keep using them until the new build is published. It does not delete `projects`, `work_experience`, `blogs`, `model.glb`, or any other existing asset. Use the normal Supabase migration history to prevent duplicate application.
 
 Template layouts are intentionally limited to supported components. A genuinely new visual primitive requires a frontend change; Settings can combine and reuse the existing layouts without a build. The RPC caps new section data to 12 visible items per section. Detail pages continue their independent queries.
