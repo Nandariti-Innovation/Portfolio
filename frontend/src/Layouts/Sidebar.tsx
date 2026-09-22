@@ -44,7 +44,7 @@ const navItems: NavItemsTypes[] = [
 ];
 
 export const Sidebar: React.FC = () => {
-  const { can, name, role } = useDashboardAccess();
+  const { hasPermission, name, role } = useDashboardAccess();
   const location = useLocation();
   const { collapsed, handleCollapsed, mobileOpen, handleMobileOpen } = useContext(settingContext);
 
@@ -92,7 +92,7 @@ export const Sidebar: React.FC = () => {
 
       <nav className="flex-1 overflow-y-auto py-4" aria-label="Dashboard navigation">
         <ul className="space-y-1 px-2">
-          {navItems.filter(item => !item.permission || can(item.permission) || (item.name === "Settings" && can(PAGE_PERMISSIONS.templates))).map((item) => (
+          {navItems.filter(item => !item.permission || hasPermission(item.permission) || (item.name === "Settings" && hasPermission(PAGE_PERMISSIONS.templates))).map((item) => (
             <li key={item.name}>
               <NavLink
                 to={item.path}
