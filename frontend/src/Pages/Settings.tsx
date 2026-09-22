@@ -2,13 +2,15 @@ import { lazy, Suspense, useContext, useState } from "react";
 import { FileText, LayoutTemplate, Settings2 } from "lucide-react";
 import { settingContext } from "@/StateManagement/ContextAPI/SettingContext/SettingContext";
 import { HeadingsEditor } from "./Settings/HeadingsEditor";
+import { PAGE_PERMISSIONS, useDashboardAccess } from "@/features/dashboardAccess/DashboardAccess";
 const TemplatesPanel = lazy(() => import("./Settings/TemplatesPanel").then(module => ({ default: module.TemplatesPanel })));
 
 type Panel = "headings" | "templates";
 
 export const Settings = () => {
   const { collapsed } = useContext(settingContext);
-  const [panel, setPanel] = useState<Panel>("headings");
+  const { can } = useDashboardAccess();
+  const [panel, setPanel] = useState<Panel>(() => can(PAGE_PERMISSIONS.settings) ? "headings" : "templates");
   const [unsaved, setUnsaved] = useState(false);
   const width = collapsed ? "w-[calc(100vw-70px)]" : "w-[calc(100vw-240px)]";
   const selectPanel = (next: Panel) => {
@@ -30,20 +32,20 @@ export const Settings = () => {
         </header>
         <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
           <nav aria-label="Settings panels" className="flex gap-2 overflow-x-auto lg:flex-col">
-            <button type="button" aria-current={panel === "headings" ? "page" : undefined}
+            {can(PAGE_PERMISSIONS.settings) && <button type="button" aria-current={panel === "headings" ? "page" : undefined}
               onClick={() => selectPanel("headings")}
               className={`flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition ${panel === "headings" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"}`}>
               <FileText size={18} />Headings{unsaved && <span className="ml-auto size-2 rounded-full bg-amber-400" title="Unsaved changes" aria-label="Unsaved changes"/>}
-            </button>
-            <button type="button" aria-current={panel === "templates" ? "page" : undefined}
+            </button>}
+            {can(PAGE_PERMISSIONS.templates) && <button type="button" aria-current={panel === "templates" ? "page" : undefined}
               onClick={() => selectPanel("templates")}
               className={`flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium transition ${panel === "templates" ? "bg-primary text-white" : "bg-white text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"}`}>
               <LayoutTemplate size={18} />Templates
-            </button>
+            </button>}
           </nav>
           <div className="min-w-0">
-            {panel === "headings" && <HeadingsEditor onUnsavedChange={setUnsaved} />}
-            {panel === "templates" && <Suspense fallback={<p role="status" className="p-8 text-sm">Loading templates…</p>}><TemplatesPanel /></Suspense>}
+            {panel === "headings" && can(PAGE_PERMISSIONS.settings) && <HeadingsEditor onUnsavedChange={setUnsaved} />}
+            {panel === "templates" && can(PAGE_PERMISSIONS.templates) && <Suspense fallback={<p role="status" className="p-8 text-sm">Loading templates…</p>}><TemplatesPanel /></Suspense>}
           </div>
         </div>
       </div>

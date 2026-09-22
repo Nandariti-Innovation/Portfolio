@@ -2,6 +2,7 @@ import { Router } from "@/Routers/Router";
 import { useFetchHomePage } from "./Hooks/FetchHomePage";
 import { useEffect } from "react";
 import { ContactModalProvider } from "@/components/ContactModalProvider";
+import { DashboardAccessProvider } from "@/features/dashboardAccess/DashboardAccess";
 
 const App = () => {
   const { fetchHomePageData, pageDataLoading } = useFetchHomePage();
@@ -12,7 +13,7 @@ const App = () => {
 
   return (
     <ContactModalProvider>
-      <Router pageDataLoading={pageDataLoading} />
+      <DashboardAccessProvider><Router pageDataLoading={pageDataLoading} /></DashboardAccessProvider>
     </ContactModalProvider>
   );
 };

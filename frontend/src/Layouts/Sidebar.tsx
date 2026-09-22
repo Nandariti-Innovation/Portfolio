@@ -15,32 +15,36 @@ import {
   Layers3,
   LayoutTemplate,
   Settings,
+  ShieldCheck,
+  Users,
   User,
   X,
 } from "lucide-react";
 import { settingContext } from "@/StateManagement/ContextAPI/SettingContext/SettingContext";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/StateManagement/Redux/reduxStore";
-import { logout } from "@/StateManagement/Redux/slices/authentication";
+import { PAGE_PERMISSIONS, useDashboardAccess } from "@/features/dashboardAccess/DashboardAccess";
+import supabase from "@/Superbase/client";
 
 const navItems: NavItemsTypes[] = [
-  { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-  { name: "Queries", path: "/dashboard/queries", icon: Inbox },
-  { name: "Storage", path: "/dashboard/media", icon: Image },
-  { name: "Projects", path: "/dashboard/projects", icon: Rocket },
-  { name: "Case study templates", path: "/dashboard/case-study-templates", icon: LayoutTemplate },
+  { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard, permission: PAGE_PERMISSIONS.overview },
+  { name: "Queries", path: "/dashboard/queries", icon: Inbox, permission: PAGE_PERMISSIONS.queries },
+  { name: "Storage", path: "/dashboard/media", icon: Image, permission: PAGE_PERMISSIONS.media },
+  { name: "Projects", path: "/dashboard/projects", icon: Rocket, permission: PAGE_PERMISSIONS.projects },
+  { name: "Case study templates", path: "/dashboard/case-study-templates", icon: LayoutTemplate, permission: PAGE_PERMISSIONS.templates },
   {
     name: "Experience",
     path: "/dashboard/experience",
     icon: BriefcaseBusiness,
+    permission: PAGE_PERMISSIONS.experience,
   },
-  { name: "Blogs", path: "/dashboard/blogs", icon: BookOpenText },
-  { name: "Sections", path: "/dashboard/sections", icon: Layers3 },
-  { name: "Settings", path: "/dashboard/setting", icon: Settings },
+  { name: "Blogs", path: "/dashboard/blogs", icon: BookOpenText, permission: PAGE_PERMISSIONS.blogs },
+  { name: "Sections", path: "/dashboard/sections", icon: Layers3, permission: PAGE_PERMISSIONS.sections },
+  { name: "Settings", path: "/dashboard/setting", icon: Settings, permission: PAGE_PERMISSIONS.settings },
+  { name: "User management", path: "/dashboard/users", icon: Users, permission: PAGE_PERMISSIONS.users },
+  { name: "My security", path: "/dashboard/security", icon: ShieldCheck },
 ];
 
 export const Sidebar: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
+  const { can, name, role } = useDashboardAccess();
   const location = useLocation();
   const { collapsed, handleCollapsed, mobileOpen, handleMobileOpen } = useContext(settingContext);
 
@@ -72,7 +76,7 @@ export const Sidebar: React.FC = () => {
               <div className="mr-3 grid size-9 place-items-center rounded-xl bg-primary/20 text-primary">
                 <User size={18} />
               </div>
-              <span><span className="block whitespace-nowrap text-sm font-semibold text-sidebar-foreground">Deepanshu Gulia</span><span className="mt-0.5 block text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/50">Portfolio admin</span></span>
+              <span><span className="block whitespace-nowrap text-sm font-semibold text-sidebar-foreground">{name || "Dashboard user"}</span><span className="mt-0.5 block text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/50">{role}</span></span>
             </div>
           )}
         </div>
@@ -88,7 +92,7 @@ export const Sidebar: React.FC = () => {
 
       <nav className="flex-1 overflow-y-auto py-4" aria-label="Dashboard navigation">
         <ul className="space-y-1 px-2">
-          {navItems.map((item) => (
+          {navItems.filter(item => !item.permission || can(item.permission) || (item.name === "Settings" && can(PAGE_PERMISSIONS.templates))).map((item) => (
             <li key={item.name}>
               <NavLink
                 to={item.path}
@@ -119,7 +123,7 @@ export const Sidebar: React.FC = () => {
       <div className="border-t border-sidebar-border p-3">
         <button
           type="button"
-          onClick={() => dispatch(logout())}
+          onClick={() => void supabase.auth.signOut()}
           className={tailwindMerge(
             "flex min-h-11 w-full cursor-pointer items-center rounded-xl px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-red-500/10 hover:text-red-300",
             collapsed ? "lg:justify-center" : ""
@@ -146,4 +150,5 @@ interface NavItemsTypes {
   icon: React.ForwardRefExoticComponent<
     Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>
   >;
+  permission?: string;
 }

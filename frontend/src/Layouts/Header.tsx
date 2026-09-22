@@ -2,6 +2,7 @@ import { useContext, useMemo } from "react";
 import { BookOpenText, BriefcaseBusiness, ExternalLink, FilePenLine, Image, Inbox, LayoutDashboard, Menu, Moon, Rocket, Settings, Sun } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { settingContext } from "@/StateManagement/ContextAPI/SettingContext/SettingContext";
+import { useDashboardAccess } from "@/features/dashboardAccess/DashboardAccess";
 
 const sections = [
   { test: (path: string) => /^\/dashboard\/blogs\/new\/?$/.test(path), title: "New story", section: "Blogs", icon: FilePenLine },
@@ -13,10 +14,13 @@ const sections = [
   { test: (path: string) => /^\/dashboard\/experience\/?$/.test(path), title: "Experience", section: "Content", icon: BriefcaseBusiness },
   { test: (path: string) => /^\/dashboard\/blogs\/?$/.test(path), title: "Blogs", section: "Content", icon: BookOpenText },
   { test: (path: string) => /^\/dashboard\/setting\/?$/.test(path), title: "Settings", section: "Account", icon: Settings },
+  { test: (path: string) => /^\/dashboard\/security\/?$/.test(path), title: "My security", section: "Account", icon: Settings },
+  { test: (path: string) => /^\/dashboard\/users\/?$/.test(path), title: "User management", section: "Account", icon: Settings },
   { test: (path: string) => /^\/dashboard\/?$/.test(path), title: "Overview", section: "Dashboard", icon: LayoutDashboard },
 ];
 
 export const Header = () => {
+  const { name, user } = useDashboardAccess();
   const location = useLocation();
   const { darkTheme, handleDarkTheme, mobileOpen, handleMobileOpen } = useContext(settingContext);
   const page = useMemo(() => sections.find((item) => item.test(location.pathname)) || sections[sections.length - 1], [location.pathname]);
@@ -31,7 +35,7 @@ export const Header = () => {
     <div className="flex items-center gap-2">
       <Link to="/" className="hidden h-9 items-center gap-2 rounded-lg border border-gray-200 px-3 text-xs font-semibold text-gray-600 hover:border-primary/40 hover:text-primary sm:inline-flex dark:border-gray-700 dark:text-gray-300"><ExternalLink size={14} />View portfolio</Link>
       <button type="button" onClick={() => handleDarkTheme(!darkTheme)} aria-label={darkTheme ? "Use light theme" : "Use dark theme"} title={darkTheme ? "Use light theme" : "Use dark theme"} className="grid size-9 cursor-pointer place-items-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">{darkTheme ? <Sun size={17} /> : <Moon size={17} />}</button>
-      <div className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-primary to-violet-600 text-xs font-bold text-white" title="Deepanshu Gulia">DG</div>
+      <div className="grid size-9 place-items-center rounded-full bg-gradient-to-br from-primary to-violet-600 text-xs font-bold text-white" title={name || user?.email || "Account"}>{(name || user?.email || "U").slice(0, 2).toUpperCase()}</div>
     </div>
   </header>;
 };
