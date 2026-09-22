@@ -6,14 +6,21 @@ export const TEMPLATE_SLOTS = {
 } as const;
 export type TemplateSlot = keyof typeof TEMPLATE_SLOTS;
 export type TemplateVariant = "cards" | "timeline" | "list";
+export type VisualLayout = {
+  variant: "puck";
+  schema_version: 1;
+  show_heading: boolean;
+  fields: string[];
+  puck_data: { content: Array<{ type: string; props: Record<string, unknown> }>; root: Record<string, unknown> };
+};
 
 export type TemplateDefinition = {
   template_key: string;
   display_name: string;
   description: string;
   layout_key: string;
-  layout_definition: { variant: TemplateVariant; show_heading: boolean; columns?: number; fields: TemplateSlot[] };
-  slots: { key: TemplateSlot; type: string; required: boolean }[];
+  layout_definition: { variant: TemplateVariant; show_heading: boolean; columns?: number; fields: TemplateSlot[] } | VisualLayout;
+  slots: { key: string; type: string; required: boolean }[];
   is_builtin: boolean;
   is_published: boolean;
 };
@@ -31,6 +38,15 @@ export type DynamicHomepage = { sections: DynamicSection[]; templates: Record<st
 
 export function isValidTemplate(value: TemplateDefinition) {
   const layout = value.layout_definition;
+  if (layout?.variant === "puck") {
+    const data = layout.puck_data;
+    return layout.schema_version === 1 && typeof layout.show_heading === "boolean" && Array.isArray(layout.fields) &&
+      layout.fields.length > 0 && layout.fields.length <= 32 &&
+      layout.fields.every((field) => typeof field === "string" && /^[a-z][a-z0-9_]{0,63}$/.test(field)) &&
+      !!data && Array.isArray(data.content) && data.content.length <= 40 &&
+      Array.isArray(value.slots) && value.slots.every((slot) =>
+        /^[a-z][a-z0-9_]{0,63}$/.test(slot.key) && ["text", "image", "date", "list", "link"].includes(slot.type));
+  }
   return !!layout && ["cards", "timeline", "list"].includes(layout.variant) &&
     typeof layout.show_heading === "boolean" && Array.isArray(layout.fields) &&
     layout.fields.length > 0 && layout.fields.length <= 9 &&

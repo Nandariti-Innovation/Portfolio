@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { ArrowUpRight, BookOpenText, BriefcaseBusiness, LayoutTemplate, Loader2, RefreshCw, Rocket } from "lucide-react";
 import { Dialog } from "radix-ui";
 import supabase from "@/Superbase/client";
-import { TEMPLATE_SLOTS, type TemplateDefinition, type TemplateSlot, type TemplateVariant } from "@/features/homepageSections/templates";
+import type { DynamicSection, TemplateDefinition } from "@/features/homepageSections/templates";
+import { VisualTemplate } from "@/features/homepageSections/puckTemplates";
 
 type SectionTemplate = TemplateDefinition & {
   reference_section_key: string | null;
@@ -14,6 +15,7 @@ const templateIcons = {
   experience_timeline: BriefcaseBusiness,
   blog_list: BookOpenText,
 };
+const TemplateDesigner = lazy(() => import("./TemplateDesigner").then(module => ({ default: module.TemplateDesigner })));
 const builtInOrder = ["project_v1", "experience_v1", "blog_v1"];
 
 export const TemplatesPanel = () => {
@@ -67,9 +69,9 @@ export const TemplatesPanel = () => {
     {editing && <Dialog.Root open onOpenChange={(open) => { if (!open) setEditing(null); }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[70] bg-slate-950/70" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-[80] max-h-[calc(100dvh-2rem)] w-[min(760px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white shadow-2xl outline-none dark:bg-gray-800">
-          <TemplateForm key={editing === "new" ? "new" : editing.template_key} original={editing === "new" ? null : editing}
-            onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setLoading(true); setRefresh((value) => value + 1); }}/>
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-[80] h-[min(96dvh,1100px)] w-[min(1500px,98vw)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white shadow-2xl outline-none dark:bg-gray-800">
+          <Suspense fallback={<p className="p-8 text-sm">Loading designer…</p>}><TemplateDesigner key={editing === "new" ? "new" : editing.template_key} original={editing === "new" ? null : editing}
+            onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setLoading(true); setRefresh((value) => value + 1); }}/></Suspense>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>}
@@ -78,11 +80,19 @@ export const TemplatesPanel = () => {
 
 const TemplateCard = ({ template, onEdit }: { template: SectionTemplate; onEdit: () => void }) => {
   const Icon = templateIcons[template.layout_key as keyof typeof templateIcons] || LayoutTemplate;
+  const preview: DynamicSection = {
+    section_key: "template_preview", heading: { index: "01", eyebrow: "PREVIEW", title: template.display_name },
+    order: 1, template_key: template.template_key,
+    field_bindings: Object.fromEntries(template.slots.map(slot => [slot.key, slot.key])),
+    items: ["01", "02", "03"].map(number => ({ title: `Example ${number}`, description: "Preview content for this template", category: "FEATURED", date: "2026-09-22", tags: ["React", "Design"], link: "/projects" })),
+  };
 
   return <article className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
     <div className="relative overflow-hidden border-b border-gray-700 bg-[#0c0c0c] p-5 text-[#f2efe9]">
       <span className="absolute right-4 top-4 rounded-md border border-white/20 bg-black/50 px-2 py-1 font-mono text-[10px] text-[#ff6b24]">Layout preview</span>
-      <div className="mt-6 min-h-40"><TemplatePreview layout={template.layout_key}/></div>
+      <div className="mt-6 h-40 overflow-hidden">{template.layout_definition.variant === "puck" ?
+        <div className="w-[250%] origin-top-left scale-[0.4] pointer-events-none"><VisualTemplate section={preview} data={template.layout_definition.puck_data}/></div> :
+        <TemplatePreview layout={template.layout_key}/>}</div>
     </div>
     <div className="space-y-4 p-5">
       <div className="flex items-start justify-between gap-3"><div><h3 className="flex items-center gap-2 text-base font-semibold"><Icon size={17} className="text-primary"/>{template.display_name}</h3>
@@ -98,61 +108,6 @@ const TemplateCard = ({ template, onEdit }: { template: SectionTemplate; onEdit:
     </div>
   </article>;
 };
-
-const options = Object.keys(TEMPLATE_SLOTS) as TemplateSlot[];
-const input = "mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-900";
-
-function TemplateForm({ original, onClose, onSaved }: { original: SectionTemplate | null; onClose: () => void; onSaved: () => void }) {
-  const [key, setKey] = useState(original?.template_key || "");
-  const [name, setName] = useState(original?.display_name || "");
-  const [description, setDescription] = useState(original?.description || "");
-  const [variant, setVariant] = useState<TemplateVariant>(original?.layout_definition.variant || "cards");
-  const [fields, setFields] = useState<TemplateSlot[]>(original?.layout_definition.fields || ["image", "title", "description"]);
-  const [showHeading, setShowHeading] = useState(original?.layout_definition.show_heading ?? true);
-  const [columns, setColumns] = useState(original?.layout_definition.columns || 3);
-  const [published, setPublished] = useState(original?.is_published ?? true);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const save = async () => {
-    if (!/^[a-z][a-z0-9_]{0,63}$/.test(key) || !name.trim() || !description.trim() ||
-        name.trim().length > 120 || description.trim().length > 500 || !fields.includes("title")) {
-      setError("Provide a valid key, name, description, and title slot."); return;
-    }
-    setBusy(true); setError("");
-    const definition = { variant, show_heading: showHeading, columns, fields };
-    const slots = fields.map((slot) => ({ key: slot,
-      type: original?.slots.find(existing => existing.key === slot)?.type || TEMPLATE_SLOTS[slot],
-      required: slot === "title" }));
-    const patch = { display_name: name.trim(), description: description.trim(), layout_key: variant,
-      display_fields: fields, layout_definition: definition, slots, is_published: published, updated_at: new Date().toISOString() };
-    const result = original ? await supabase.from("section_templates").update(patch).eq("template_key", key).select("template_key").single() :
-      await supabase.from("section_templates").insert({ ...patch, template_key: key, is_builtin: false }).select("template_key").single();
-    if (result.error) setError(result.error.message); else onSaved();
-    setBusy(false);
-  };
-  return <div className="rounded-2xl border border-primary/40 bg-white p-5 dark:bg-gray-800">
-    <Dialog.Title className="text-lg font-semibold">{original ? `Edit ${original.display_name}` : "Create a reusable template"}</Dialog.Title>
-    <Dialog.Description className="mt-1 text-sm text-gray-500">Layouts use supported building blocks. Each section maps its table fields to the selected slots.</Dialog.Description>
-    <div className="mt-4 grid gap-4 sm:grid-cols-2">
-      <label className="text-sm">Template key<input className={input} value={key} disabled={!!original} maxLength={64} onChange={e => setKey(e.target.value)}/></label>
-      <label className="text-sm">Display name<input className={input} value={name} maxLength={120} onChange={e => setName(e.target.value)}/></label>
-      <label className="text-sm sm:col-span-2">Description<textarea className={input} value={description} maxLength={500} onChange={e => setDescription(e.target.value)}/></label>
-      <label className="text-sm">Layout<select className={input} value={variant} onChange={e => setVariant(e.target.value as TemplateVariant)}>
-        <option value="cards">Cards</option><option value="timeline">Timeline</option><option value="list">Editorial list</option></select></label>
-      {variant === "cards" && <label className="text-sm">Columns<select className={input} value={columns} onChange={e => setColumns(Number(e.target.value))}>
-        <option value={2}>Two</option><option value={3}>Three</option></select></label>}
-    </div>
-    <p className="mt-4 text-sm font-medium">Template slots</p>
-    <div className="mt-2 flex flex-wrap gap-3">{options.map(slot => <label key={slot} className="flex items-center gap-2 text-sm capitalize">
-      <input type="checkbox" checked={fields.includes(slot)} disabled={slot === "title"} onChange={e => setFields(current => e.target.checked ? [...current, slot] : current.filter(item => item !== slot))}/>{slot.replaceAll("_", " ")}</label>)}</div>
-    <div className="mt-4 rounded-xl bg-[#0c0c0c] p-5 text-white"><p className="mb-4 text-xs uppercase text-[#ff6b24]">Layout preview</p><TemplatePreview layout={variant === "cards" ? "project_grid" : variant === "timeline" ? "experience_timeline" : "blog_list"}/></div>
-    <div className="mt-4 flex flex-wrap gap-5"><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showHeading} onChange={e => setShowHeading(e.target.checked)}/>Show heading</label>
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={published} onChange={e => setPublished(e.target.checked)}/>Available on homepage</label></div>
-    {error && <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>}
-    <div className="mt-5 flex justify-end gap-3"><button type="button" onClick={onClose} className="rounded-lg border px-4 py-2 text-sm">Cancel</button>
-      <button type="button" disabled={busy} onClick={() => void save()} className="rounded-lg bg-primary px-4 py-2 text-sm text-white disabled:opacity-50">{busy ? "Saving…" : "Save template"}</button></div>
-  </div>;
-}
 
 const TemplatePreview = ({ layout }: { layout: string }) => {
   if (layout === "project_grid") return <div className="grid grid-cols-3 gap-2" aria-label="Three featured project cards">

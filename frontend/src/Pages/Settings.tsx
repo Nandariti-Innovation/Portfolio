@@ -1,8 +1,8 @@
-import { useContext, useState } from "react";
+import { lazy, Suspense, useContext, useState } from "react";
 import { FileText, LayoutTemplate, Settings2 } from "lucide-react";
 import { settingContext } from "@/StateManagement/ContextAPI/SettingContext/SettingContext";
 import { HeadingsEditor } from "./Settings/HeadingsEditor";
-import { TemplatesPanel } from "./Settings/TemplatesPanel";
+const TemplatesPanel = lazy(() => import("./Settings/TemplatesPanel").then(module => ({ default: module.TemplatesPanel })));
 
 type Panel = "headings" | "templates";
 
@@ -43,7 +43,7 @@ export const Settings = () => {
           </nav>
           <div className="min-w-0">
             {panel === "headings" && <HeadingsEditor onUnsavedChange={setUnsaved} />}
-            {panel === "templates" && <TemplatesPanel />}
+            {panel === "templates" && <Suspense fallback={<p role="status" className="p-8 text-sm">Loading templates…</p>}><TemplatesPanel /></Suspense>}
           </div>
         </div>
       </div>

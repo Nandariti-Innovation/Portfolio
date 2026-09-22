@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import type { RootState } from "@/StateManagement/Redux/reduxStore";
 import { HomepageSectionHeading } from "./HomepageSectionHeading";
 import { isValidTemplate, slotValue, type DynamicSection, type TemplateDefinition, type TemplateSlot } from "@/features/homepageSections/templates";
+import { VisualTemplate } from "@/features/homepageSections/puckTemplates";
 
 const storage = "https://nwacsfxeexspkaspjwjd.supabase.co/storage/v1/object/public/portfolio/";
 const asText = (value: unknown) => typeof value === "string" || typeof value === "number" ? String(value) : "";
@@ -40,6 +41,12 @@ export const DynamicSections = () => {
 };
 
 export const DynamicSectionView = ({ section, template }: { section: DynamicSection; template: TemplateDefinition }) => {
+  if (template.layout_definition.variant === "puck") {
+    const id = section.section_key === "project" ? "projects" : section.section_key;
+    return <section className="panel content-panel" id={id} aria-label={section.heading.title}>
+      <VisualTemplate section={section} data={template.layout_definition.puck_data}/>
+    </section>;
+  }
   const { variant, fields, show_heading, columns = 3 } = template.layout_definition;
   const enabled = (slot: TemplateSlot) => fields.includes(slot);
   const value = (item: Record<string, unknown>, slot: TemplateSlot) => slotValue(item, section.field_bindings[slot]);

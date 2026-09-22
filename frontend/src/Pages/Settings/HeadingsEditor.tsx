@@ -198,7 +198,7 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
                       slot.type === "date" ? ["date","datetime"].includes(item.type) :
                       slot.type === "image" ? ["image","url","string"].includes(item.type) :
                       slot.type === "link" ? ["url","string","integer","uuid"].includes(item.type) :
-                      ["string","text","integer","number"].includes(item.type));
+                      ["string","text","integer","number","string_array"].includes(item.type));
                     return <label key={slot.key} className="text-sm capitalize">{slot.key.replaceAll("_", " ")}{slot.required ? " *" : ""}
                       <select className={inputClass} value={field} onChange={e => {
                         const next = { ...section.field_bindings };
