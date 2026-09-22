@@ -34,16 +34,16 @@ The canonical file and migration must contain identical JSON.
 
 ```json
 {
-  "section_key": "certifications",
+  "section_key": "sample_section",
   "enabled": false,
   "order": 4,
   "heading": {
     "index": "05",
-    "eyebrow": "CERTIFICATIONS",
-    "title": "Learning proven through practice."
+    "eyebrow": "SAMPLE",
+    "title": "A sample heading."
   },
-  "template_key": "certifications_v1",
-  "table_name": "certifications",
+  "template_key": null,
+  "table_name": "sample_section",
   "data_schema": {
     "version": 1,
     "fields": [
@@ -57,7 +57,7 @@ The canonical file and migration must contain identical JSON.
       },
       {
         "key": "name",
-        "label": "Certification name",
+        "label": "Name",
         "type": "string",
         "input": "text",
         "required": true,
@@ -76,7 +76,7 @@ The canonical file and migration must contain identical JSON.
 | `enabled` | Controls public visibility |
 | `order` | Orders configurable homepage sections |
 | `heading` | Stores the public index, eyebrow and title |
-| `template_key` | Selects a registered React template |
+| `template_key` | Selects a registered React template; `null` until assigned |
 | `table_name` | Names the section's actual Supabase table |
 | `data_schema` | Describes the complete table record and dashboard form fields |
 
@@ -136,7 +136,7 @@ uuid
 - `order` must be a positive integer.
 - Enabled sections cannot share an order.
 - Headings require `index`, `eyebrow` and `title`.
-- Template keys must exist in the frontend template registry.
+- Non-null template keys must exist in the frontend template registry; an enabled section must have a template.
 - `data_schema.fields` must be non-empty and use unique field keys.
 - Invalid sections are reported and skipped independently.
 
@@ -152,11 +152,9 @@ The homepage continues to make one `get_homepage_payload` request. Adding config
 
 ## New-section workflow
 
-1. Design the section and its data contract.
-2. Add its disabled manifest entry.
-3. Create its Supabase table, constraints and RLS policies.
-4. Create and register its React template.
-5. Include the table's public data in `get_homepage_payload`.
-6. Add its dashboard content page and schema-driven form.
-7. Verify validation, permissions, Redux state and public rendering.
-8. Enable the section.
+1. In Settings → Headings, enter a new section key, heading and 1–20 typed data fields.
+2. `create_homepage_section` atomically creates its Supabase table and inactive manifest entry with `template_key: null`.
+3. Create or select a registered template in a future Settings → Templates feature; create its dashboard content page and extend the homepage payload and Redux as needed.
+4. Verify validation, permissions, Redux state and public rendering, then enable the section.
+
+The function requires `app_metadata.portfolio_owner = true` on the signed-in dashboard account. This is server-managed Auth metadata, not user-editable metadata; refresh the session after assigning it. The function must be deployed before the new-section action can succeed. Newly created tables initially grant only the owner access; public read policy comes with the template/data integration, before activation.

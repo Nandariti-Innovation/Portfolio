@@ -73,7 +73,8 @@ export type HomepageSectionConfiguration = {
   enabled: boolean;
   order: number;
   heading: SectionHeading;
-  template_key: RegisteredSectionTemplate;
+  // Inactive sections may await a template. They cannot render until assigned.
+  template_key: RegisteredSectionTemplate | null;
   table_name: string;
   data_schema: SectionDataSchema;
 };
@@ -199,7 +200,7 @@ function parseSection(
   const sectionKey = readString(value, "section_key", objectKey, errors);
   const enabled = readBoolean(value, "enabled", objectKey, errors);
   const order = readPositiveInteger(value, "order", objectKey, errors);
-  const templateKey = readString(value, "template_key", objectKey, errors);
+  const templateKey = value.template_key;
   const tableName = readString(value, "table_name", objectKey, errors);
 
   if (sectionKey && sectionKey !== objectKey) {
@@ -208,8 +209,11 @@ function parseSection(
   if (sectionKey && !identifierPattern.test(sectionKey)) {
     errors.push(error(objectKey, "section_key", "has an invalid format"));
   }
-  if (templateKey && !templateKeys.has(templateKey)) {
+  if (templateKey !== null && (typeof templateKey !== "string" || !templateKeys.has(templateKey))) {
     errors.push(error(objectKey, "template_key", "is not registered"));
+  }
+  if (enabled && templateKey === null) {
+    errors.push(error(objectKey, "template_key", "must be assigned before enabling"));
   }
   if (tableName && !identifierPattern.test(tableName)) {
     errors.push(error(objectKey, "table_name", "has an invalid format"));
@@ -224,7 +228,7 @@ function parseSection(
     enabled === undefined ||
     order === undefined ||
     !heading ||
-    !templateKey ||
+    (typeof templateKey !== "string" && templateKey !== null) ||
     !tableName ||
     !dataSchema
   ) {
@@ -236,7 +240,7 @@ function parseSection(
     enabled,
     order,
     heading,
-    template_key: templateKey as RegisteredSectionTemplate,
+    template_key: templateKey as RegisteredSectionTemplate | null,
     table_name: tableName,
     data_schema: dataSchema,
   };
