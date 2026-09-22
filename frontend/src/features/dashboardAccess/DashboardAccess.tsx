@@ -19,10 +19,11 @@ type Access = {
   loading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  can: (permission: string) => boolean;
+  hasPermission: (permission: string) => boolean;
+  isMfaSatisfied: boolean;
 };
 
-const initial: Omit<Access, "refresh" | "can"> = {
+const initial: Omit<Access, "refresh" | "hasPermission" | "isMfaSatisfied"> = {
   user: null, role: null, name: "", active: false, permissions: [],
   aal: "aal1", loading: true, error: null,
 };
@@ -47,7 +48,11 @@ export function DashboardAccessProvider({ children }: { children: ReactNode }) {
       return;
     }
     const role = membership?.role_key ?? "blank";
-    const { data: assurance } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    const { data: assurance, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assuranceError) {
+      setAccess({ ...initial, user, loading: false, error: assuranceError.message });
+      return;
+    }
     let permissions: string[] = [];
     if (membership?.is_active && !["superadmin", "admin", "blank"].includes(role)) {
       const { data, error: permissionsError } = await supabase.from("dashboard_role_permissions")
@@ -74,9 +79,10 @@ export function DashboardAccessProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const can = (permission: string) => access.active && access.aal === "aal2" &&
+  const hasPermission = (permission: string) => Boolean(access.user) && access.active &&
     (access.role === "superadmin" || access.role === "admin" || access.permissions.includes(permission));
-  return <AccessContext.Provider value={{ ...access, refresh, can }}>{children}</AccessContext.Provider>;
+  const isMfaSatisfied = access.aal === "aal2";
+  return <AccessContext.Provider value={{ ...access, refresh, hasPermission, isMfaSatisfied }}>{children}</AccessContext.Provider>;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
