@@ -201,14 +201,14 @@ const ContactModalRoute = () => {
 };
 
 const PrivateRouter = () => {
-  const { user, active, role, aal, loading, error } = useDashboardAccess();
+  const { user, active, role, isMfaSatisfied, loading, error } = useDashboardAccess();
   const location = useLocation();
 
   if (loading) return <RouteFallback />;
   if (!user) return <Navigate to="/dashboard/auth" replace />;
   if (error) return <main role="alert" className="p-8">Unable to check dashboard access: {error}</main>;
   const securityRoute = location.pathname === "/dashboard/security";
-  if (!securityRoute && active && role !== "blank" && aal !== "aal2") return <Navigate to="/dashboard/security" replace />;
+  if (!securityRoute && active && role !== "blank" && !isMfaSatisfied) return <Navigate to="/dashboard/security" replace />;
   if (!securityRoute && (!active || role === "blank")) return <DashboardPending />;
   return (
     <div className="w-screen h-dvh overflow-hidden">
@@ -226,13 +226,13 @@ const PrivateRouter = () => {
 };
 
 const RequirePermission = ({ permission, children }: { permission: string; children: React.ReactNode }) => {
-  const { can } = useDashboardAccess();
-  return can(permission) ? children : <main className="p-8" role="alert">You do not have access to this dashboard page.</main>;
+  const { hasPermission, isMfaSatisfied } = useDashboardAccess();
+  return isMfaSatisfied && hasPermission(permission) ? children : <main className="p-8" role="alert">You do not have access to this dashboard page.</main>;
 };
 
 const RequireAnyPermission = ({ permissions, children }: { permissions: string[]; children: React.ReactNode }) => {
-  const { can } = useDashboardAccess();
-  return permissions.some(can) ? children : <main className="p-8" role="alert">You do not have access to this dashboard page.</main>;
+  const { hasPermission, isMfaSatisfied } = useDashboardAccess();
+  return isMfaSatisfied && permissions.some(hasPermission) ? children : <main className="p-8" role="alert">You do not have access to this dashboard page.</main>;
 };
 
 const DashboardPending = () => <main className="grid min-h-screen place-items-center p-8 text-center">
