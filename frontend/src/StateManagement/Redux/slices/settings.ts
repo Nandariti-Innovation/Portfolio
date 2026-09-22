@@ -27,6 +27,13 @@ const settingSlice = createSlice({
     setSettingData: (state, action: PayloadAction<SettingsType[]>) => {
       state.setting = action.payload;
     },
+    upsertSettingData: (state, action: PayloadAction<SettingsType>) => {
+      const index = state.setting.findIndex(
+        (item) => item.setting_name === action.payload.setting_name,
+      );
+      if (index === -1) state.setting.push(action.payload);
+      else state.setting[index] = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -46,5 +53,5 @@ const settingSlice = createSlice({
   },
 });
 
-export const { setSettingData } = settingSlice.actions;
+export const { setSettingData, upsertSettingData } = settingSlice.actions;
 export default settingSlice.reducer;
