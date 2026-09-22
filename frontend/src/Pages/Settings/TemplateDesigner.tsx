@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Puck } from "@puckeditor/core";
 import "@puckeditor/core/puck.css";
-import { Dialog } from "radix-ui";
 import supabase from "@/Superbase/client";
 import type { TemplateDefinition, DynamicSection } from "@/features/homepageSections/templates";
 import { analyzeTemplate, asPuckLayout, createTemplateConfig, type PuckTemplateData } from "@/features/homepageSections/puckTemplates";
@@ -17,14 +16,15 @@ export function TemplateDesigner({ original, onClose, onSaved }: { original: Sec
   const [published, setPublished] = useState(original?.is_published ?? true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const initial = asPuckLayout(original);
-  const sample: DynamicSection = {
+  const initial = useMemo(() => asPuckLayout(original), [original]);
+  const sample: DynamicSection = useMemo(() => ({
     section_key: "template_preview", heading: { index: "01", eyebrow: "YOUR SECTION", title: "A reusable section layout" },
-    order: 1, template_key: key,
+    order: 1, template_key: "template_preview",
     field_bindings: Object.fromEntries(["title", "subtitle", "description", "category", "image", "date", "tags", "link"].map(slot => [slot, slot])),
     items: [{ title: "First example item", subtitle: "A supporting line", description: "This is sample content. Connect slots to the section’s table fields in Headings.",
       category: "FEATURED", date: "2026-09-22", tags: ["React", "Design"], link: "/projects" }],
-  };
+  }), []);
+  const config = useMemo(() => createTemplateConfig(sample), [sample]);
   const save = async (data: PuckTemplateData) => {
     if (!/^[a-z][a-z0-9_]{0,63}$/.test(key) || !name.trim() || !description.trim() ||
         name.trim().length > 120 || description.trim().length > 500) {
@@ -43,8 +43,8 @@ export function TemplateDesigner({ original, onClose, onSaved }: { original: Sec
     setBusy(false);
   };
   return <div className="p-4 dark:text-white">
-    <Dialog.Title className="text-lg font-semibold">{original ? `Edit ${original.display_name}` : "Create a reusable template"}</Dialog.Title>
-    <Dialog.Description className="mt-1 text-sm text-gray-500">Drag blocks onto the canvas, design an item inside Repeating items, and preview mobile, tablet, and desktop. Publish to save.</Dialog.Description>
+    <h2 className="text-lg font-semibold">{original ? `Edit ${original.display_name}` : "Create a reusable template"}</h2>
+    <p className="mt-1 text-sm text-gray-500">Drag blocks onto the canvas, design an item inside Repeating items, and preview mobile, tablet, and desktop. Publish to save.</p>
     <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_2fr]">
       <label className="text-sm">Template key<input className={input} value={key} disabled={!!original} maxLength={64} onChange={e => setKey(e.target.value)}/></label>
       <label className="text-sm">Display name<input className={input} value={name} maxLength={120} onChange={e => setName(e.target.value)}/></label>
@@ -55,7 +55,7 @@ export function TemplateDesigner({ original, onClose, onSaved }: { original: Sec
     {error && <p role="alert" className="mt-4 text-sm text-red-600">{error}</p>}
     <div className="mb-2 flex justify-end"><button type="button" onClick={onClose} className="rounded-lg border px-4 py-2 text-sm">Close designer</button></div>
     <div className="overflow-hidden rounded-xl border border-gray-300 text-gray-900 dark:border-gray-600">
-      <Puck config={createTemplateConfig(sample)} data={initial.puck_data as PuckTemplateData} height="calc(96dvh - 250px)"
+      <Puck config={config} data={initial.puck_data as PuckTemplateData} height="max(420px, calc(100dvh - 260px))"
         onPublish={async data => { if (!busy) await save(data); }}/>
     </div>
   </div>;

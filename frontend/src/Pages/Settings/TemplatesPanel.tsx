@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ArrowUpRight, BookOpenText, BriefcaseBusiness, LayoutTemplate, Loader2, RefreshCw, Rocket } from "lucide-react";
-import { Dialog } from "radix-ui";
 import supabase from "@/Superbase/client";
 import type { DynamicSection, TemplateDefinition } from "@/features/homepageSections/templates";
 import { VisualTemplate } from "@/features/homepageSections/puckTemplates";
@@ -66,15 +66,13 @@ export const TemplatesPanel = () => {
       : templates.length === 0 ? <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-gray-700 dark:bg-gray-800"><LayoutTemplate size={28} className="mx-auto text-gray-400"/><p className="mt-3 font-medium">No templates found</p><p className="mt-1 text-sm text-gray-500">The template catalog has no records yet.</p></div>
       : <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
         {templates.map((template) => <TemplateCard key={template.template_key} template={template} onEdit={() => setEditing(template)}/>)}</div>}
-    {editing && <Dialog.Root open onOpenChange={(open) => { if (!open) setEditing(null); }}>
-      <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-[70] bg-slate-950/70" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-[80] h-[min(96dvh,1100px)] w-[min(1500px,98vw)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-white shadow-2xl outline-none dark:bg-gray-800">
+    {editing && createPortal(
+      <div className="fixed inset-0 z-[100] overflow-y-auto bg-white dark:bg-gray-800" aria-label="Template layout designer">
+        <div className="mx-auto max-w-[1600px]">
           <Suspense fallback={<p className="p-8 text-sm">Loading designer…</p>}><TemplateDesigner key={editing === "new" ? "new" : editing.template_key} original={editing === "new" ? null : editing}
             onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setLoading(true); setRefresh((value) => value + 1); }}/></Suspense>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>}
+        </div>
+      </div>, document.body)}
   </section>;
 };
 
