@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
+import { corsHeaders } from "npm:@supabase/supabase-js@2.116.0/cors";
 
 const url = Deno.env.get("SUPABASE_URL")!;
 const publishableKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -6,16 +7,17 @@ const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
 const auth = createClient(url, publishableKey, { auth: { autoRefreshToken: false, persistSession: false } });
 const origins = new Set(["https://deepanshugulia.in", "https://www.deepanshugulia.in", "http://localhost:5173"]);
+const isAllowedOrigin = (origin: string) => origins.has(origin) || /^https:\/\/[a-z0-9-]+-5173\.app\.github\.dev$/i.test(origin);
 
 Deno.serve(async (request) => {
   const origin = request.headers.get("origin") ?? "";
-  const headers: Record<string, string> = { "Content-Type": "application/json", Vary: "Origin" };
-  if (origins.has(origin)) headers["Access-Control-Allow-Origin"] = origin;
-  headers["Access-Control-Allow-Headers"] = "authorization, apikey, content-type";
+  const originAllowed = !origin || isAllowedOrigin(origin);
+  const headers: Record<string, string> = { ...corsHeaders, "Content-Type": "application/json", Vary: "Origin" };
+  headers["Access-Control-Allow-Origin"] = originAllowed ? (origin || "*") : "null";
   headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE, OPTIONS";
   const respond = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers });
-  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
-  if (origin && !origins.has(origin)) return respond(403, { error: "Origin denied" });
+  if (request.method === "OPTIONS") return new Response("ok", { status: originAllowed ? 200 : 403, headers });
+  if (!originAllowed) return respond(403, { error: "Origin denied" });
   const jwt = request.headers.get("Authorization")?.replace(/^Bearer /i, "");
   if (!jwt) return respond(401, { error: "Sign in required" });
 
