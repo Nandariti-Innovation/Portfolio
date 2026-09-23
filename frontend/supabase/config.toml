@@ -6,4 +6,4 @@ project_id = "portfolio-contact"
 verify_jwt = false
 
 [functions/dashboard-users]
-verify_jwt = true
+verify_jwt = false
