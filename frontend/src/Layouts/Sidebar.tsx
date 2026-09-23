@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { tailwindMerge } from "../Utils/tailwindMerge";
 import {
@@ -7,6 +7,7 @@ import {
   BriefcaseBusiness,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Image,
   LayoutDashboard,
   LogOut,
@@ -15,8 +16,6 @@ import {
   Layers3,
   LayoutTemplate,
   Settings,
-  ShieldCheck,
-  Users,
   User,
   X,
 } from "lucide-react";
@@ -28,25 +27,24 @@ const navItems: NavItemsTypes[] = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard, permission: PAGE_PERMISSIONS.overview },
   { name: "Queries", path: "/dashboard/queries", icon: Inbox, permission: PAGE_PERMISSIONS.queries },
   { name: "Storage", path: "/dashboard/media", icon: Image, permission: PAGE_PERMISSIONS.media },
-  { name: "Projects", path: "/dashboard/projects", icon: Rocket, permission: PAGE_PERMISSIONS.projects },
   { name: "Case study templates", path: "/dashboard/case-study-templates", icon: LayoutTemplate, permission: PAGE_PERMISSIONS.templates },
-  {
-    name: "Experience",
-    path: "/dashboard/experience",
-    icon: BriefcaseBusiness,
-    permission: PAGE_PERMISSIONS.experience,
-  },
+  { name: "Settings", path: "/dashboard/settings", icon: Settings },
+];
+
+const sectionItems: NavItemsTypes[] = [
+  { name: "Projects", path: "/dashboard/projects", icon: Rocket, permission: PAGE_PERMISSIONS.projects },
+  { name: "Experience", path: "/dashboard/experience", icon: BriefcaseBusiness, permission: PAGE_PERMISSIONS.experience },
   { name: "Blogs", path: "/dashboard/blogs", icon: BookOpenText, permission: PAGE_PERMISSIONS.blogs },
-  { name: "Sections", path: "/dashboard/sections", icon: Layers3, permission: PAGE_PERMISSIONS.sections },
-  { name: "Settings", path: "/dashboard/setting", icon: Settings, permission: PAGE_PERMISSIONS.settings },
-  { name: "User management", path: "/dashboard/users", icon: Users, permission: PAGE_PERMISSIONS.users },
-  { name: "My security", path: "/dashboard/security", icon: ShieldCheck },
+  { name: "Custom sections", path: "/dashboard/sections", icon: Layers3, permission: PAGE_PERMISSIONS.sections },
 ];
 
 export const Sidebar: React.FC = () => {
   const { hasPermission, name, role } = useDashboardAccess();
   const location = useLocation();
   const { collapsed, handleCollapsed, mobileOpen, handleMobileOpen } = useContext(settingContext);
+  const [sectionsOpen, setSectionsOpen] = useState(() => ["/dashboard/projects", "/dashboard/experience", "/dashboard/blogs", "/dashboard/sections"].some(path => location.pathname.startsWith(path)));
+  const canSee = (item: NavItemsTypes) => !item.permission || hasPermission(item.permission) || (item.name === "Settings" && hasPermission(PAGE_PERMISSIONS.templates));
+  const visibleSections = sectionItems.filter(canSee);
 
   useEffect(() => {
     handleMobileOpen(false);
@@ -92,7 +90,7 @@ export const Sidebar: React.FC = () => {
 
       <nav className="flex-1 overflow-y-auto py-4" aria-label="Dashboard navigation">
         <ul className="space-y-1 px-2">
-          {navItems.filter(item => !item.permission || hasPermission(item.permission) || (item.name === "Settings" && hasPermission(PAGE_PERMISSIONS.templates))).map((item) => (
+          {navItems.slice(0, -1).filter(canSee).map((item) => (
             <li key={item.name}>
               <NavLink
                 to={item.path}
@@ -117,6 +115,21 @@ export const Sidebar: React.FC = () => {
               </NavLink>
             </li>
           ))}
+          {visibleSections.length > 0 && <li>
+            <button type="button" onClick={() => setSectionsOpen(value => !value)} aria-expanded={sectionsOpen} className={tailwindMerge("flex min-h-11 w-full items-center rounded-xl px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent/50", collapsed ? "lg:justify-center" : "")}>
+              <Layers3 size={20} className={tailwindMerge("shrink-0", collapsed ? "mr-3 lg:mr-0" : "mr-3")}/>
+              <span className={tailwindMerge("flex-1 text-left", collapsed && "lg:hidden")}>Sections</span>
+              <ChevronDown size={16} className={tailwindMerge("transition-transform", sectionsOpen && "rotate-180", collapsed && "lg:hidden")}/>
+            </button>
+            {sectionsOpen && <ul className={tailwindMerge("mt-1 space-y-1 border-l border-sidebar-border pl-2", collapsed ? "lg:border-0 lg:pl-0" : "ml-5")}>
+              {visibleSections.map(item => <li key={item.name}><NavLink to={item.path} className={({ isActive }) => tailwindMerge("flex min-h-10 items-center rounded-xl px-3 py-2 text-sm transition-colors", collapsed ? "lg:justify-center" : "", isActive ? "bg-sidebar-accent text-primary" : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50")}>
+                <item.icon size={17} className={tailwindMerge("shrink-0", collapsed ? "mr-3 lg:mr-0" : "mr-3")}/><span className={tailwindMerge(collapsed && "lg:hidden")}>{item.name}</span>
+              </NavLink></li>)}
+            </ul>}
+          </li>}
+          {navItems.slice(-1).filter(canSee).map(item => <li key={item.name}><NavLink to={item.path} className={({ isActive }) => tailwindMerge("flex min-h-11 items-center rounded-xl px-3 py-2 text-sm font-medium transition-colors", collapsed ? "lg:justify-center" : "", isActive ? "bg-sidebar-accent text-primary bg-gradient-to-r from-primary/20 to-transparent" : "text-sidebar-foreground hover:bg-sidebar-accent/50")}>
+            <item.icon size={20} className={tailwindMerge("shrink-0", collapsed ? "mr-3 lg:mr-0" : "mr-3")}/><span className={tailwindMerge(collapsed && "lg:hidden")}>{item.name}</span>
+          </NavLink></li>)}
         </ul>
       </nav>
 
