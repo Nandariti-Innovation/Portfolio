@@ -32,8 +32,6 @@ const Settings = lazy(() =>
   import("@/Pages/Settings").then((module) => ({ default: module.Settings })),
 );
 const DashboardSections = lazy(() => import("@/Pages/Dashboard/Sections"));
-const DashboardSecurity = lazy(() => import("@/Pages/Dashboard/Security"));
-const DashboardUsers = lazy(() => import("@/Pages/Dashboard/UserManagement"));
 
 export const Router = ({ pageDataLoading }: { pageDataLoading: boolean }) => {
   const location = useLocation();
@@ -64,9 +62,10 @@ export const Router = ({ pageDataLoading }: { pageDataLoading: boolean }) => {
             <Route path="blogs/new" element={<RequirePermission permission={PAGE_PERMISSIONS.blogs}><BlogEditor /></RequirePermission>} />
             <Route path="blogs/:blogId/edit" element={<RequirePermission permission={PAGE_PERMISSIONS.blogs}><BlogEditor /></RequirePermission>} />
             <Route path="blogs/:blogId/preview" element={<RequirePermission permission={PAGE_PERMISSIONS.blogs}><BlogPreview /></RequirePermission>} />
-            <Route path="setting" element={<RequireAnyPermission permissions={[PAGE_PERMISSIONS.settings, PAGE_PERMISSIONS.templates]}><Settings /></RequireAnyPermission>} />
-            <Route path="users" element={<RequirePermission permission={PAGE_PERMISSIONS.users}><DashboardUsers /></RequirePermission>} />
-            <Route path="security" element={<DashboardSecurity />} />
+            <Route path="settings/*" element={<Settings />} />
+            <Route path="setting" element={<Navigate to="/dashboard/settings" replace />} />
+            <Route path="users" element={<Navigate to="/dashboard/settings/users" replace />} />
+            <Route path="security" element={<Navigate to="/dashboard/settings/security" replace />} />
           </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -207,8 +206,8 @@ const PrivateRouter = () => {
   if (loading) return <RouteFallback />;
   if (!user) return <Navigate to="/dashboard/auth" replace />;
   if (error) return <main role="alert" className="p-8">Unable to check dashboard access: {error}</main>;
-  const securityRoute = location.pathname === "/dashboard/security";
-  if (!securityRoute && active && role !== "blank" && !isMfaSatisfied) return <Navigate to="/dashboard/security" replace />;
+  const securityRoute = location.pathname === "/dashboard/settings/security" || location.pathname === "/dashboard/security";
+  if (!securityRoute && active && role !== "blank" && !isMfaSatisfied) return <Navigate to="/dashboard/settings/security" replace />;
   if (!securityRoute && (!active || role === "blank")) return <DashboardPending />;
   return (
     <div className="w-screen h-dvh overflow-hidden">
@@ -230,15 +229,10 @@ const RequirePermission = ({ permission, children }: { permission: string; child
   return isMfaSatisfied && hasPermission(permission) ? children : <main className="p-8" role="alert">You do not have access to this dashboard page.</main>;
 };
 
-const RequireAnyPermission = ({ permissions, children }: { permissions: string[]; children: React.ReactNode }) => {
-  const { hasPermission, isMfaSatisfied } = useDashboardAccess();
-  return isMfaSatisfied && permissions.some(hasPermission) ? children : <main className="p-8" role="alert">You do not have access to this dashboard page.</main>;
-};
-
 const DashboardPending = () => <main className="grid min-h-screen place-items-center p-8 text-center">
   <div><h1 className="text-xl font-bold">Dashboard access pending</h1>
     <p className="mt-2">An administrator must assign you a role before you can enter the dashboard.</p>
-    <a href="/dashboard/security" className="mt-4 inline-block text-primary underline">My security settings</a>
+    <a href="/dashboard/settings/security" className="mt-4 inline-block text-primary underline">My security settings</a>
     <button type="button" className="ml-4 text-primary underline" onClick={() => void supabase.auth.signOut()}>Sign out</button>
   </div>
 </main>;
