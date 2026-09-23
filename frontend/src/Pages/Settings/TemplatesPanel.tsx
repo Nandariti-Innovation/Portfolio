@@ -78,18 +78,31 @@ export const TemplatesPanel = () => {
 
 const TemplateCard = ({ template, onEdit }: { template: SectionTemplate; onEdit: () => void }) => {
   const Icon = templateIcons[template.layout_key as keyof typeof templateIcons] || LayoutTemplate;
+  const v2Dependencies = template.layout_definition.variant === "puck" && "schema_version" in template.layout_definition && template.layout_definition.schema_version === 2
+    ? template.layout_definition.dependencies.fields : [];
+  const previewValue = (field: string, type: string, index: number) => {
+    if (type === "string_array") return ["React", "Design", "Portfolio"];
+    if (type === "integer" || type === "number") return index + 1;
+    if (type === "boolean") return true;
+    if (type === "date" || type === "datetime") return `202${index + 3}-0${index + 1}-01`;
+    if (type === "url") return "/projects";
+    if (type === "image") return "";
+    return `${field.replaceAll("_", " ")} ${index + 1}`;
+  };
   const preview: DynamicSection = {
     section_key: "template_preview", heading: { index: "01", eyebrow: "PREVIEW", title: template.display_name },
     order: 1, template_key: template.template_key,
     field_bindings: Object.fromEntries(template.slots.map(slot => [slot.key, slot.key])),
-    items: ["01", "02", "03"].map(number => ({ title: `Example ${number}`, description: "Preview content for this template", category: "FEATURED", date: "2026-09-22", tags: ["React", "Design"], link: "/projects" })),
+    items: [0, 1, 2].map(index => v2Dependencies.length
+      ? Object.fromEntries(v2Dependencies.map(dependency => [dependency.field, previewValue(dependency.field, dependency.type, index)]))
+      : { title: `Example 0${index + 1}`, description: "Preview content for this template", category: "FEATURED", date: "2026-09-22", tags: ["React", "Design"], link: "/projects" }),
   };
 
   return <article className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
     <div className="relative overflow-hidden border-b border-gray-700 bg-[#0c0c0c] p-5 text-[#f2efe9]">
       <span className="absolute right-4 top-4 rounded-md border border-white/20 bg-black/50 px-2 py-1 font-mono text-[10px] text-[#ff6b24]">Layout preview</span>
       <div className="mt-6 h-40 overflow-hidden">{template.layout_definition.variant === "puck" ?
-        <div className="w-[250%] origin-top-left scale-[0.4] pointer-events-none"><VisualTemplate section={preview} data={template.layout_definition.puck_data}/></div> :
+        <div className="w-[250%] origin-top-left scale-[0.4] pointer-events-none"><VisualTemplate section={preview} layout={template.layout_definition}/></div> :
         <TemplatePreview layout={template.layout_key}/>}</div>
     </div>
     <div className="space-y-4 p-5">

@@ -44,7 +44,7 @@ export const DynamicSectionView = ({ section, template }: { section: DynamicSect
   if (template.layout_definition.variant === "puck") {
     const id = section.section_key === "project" ? "projects" : section.section_key;
     return <section className="panel content-panel" id={id} aria-label={section.heading.title}>
-      <VisualTemplate section={section} data={template.layout_definition.puck_data}/>
+      <VisualTemplate section={section} layout={template.layout_definition}/>
     </section>;
   }
   const { variant, fields, show_heading, columns = 3 } = template.layout_definition;

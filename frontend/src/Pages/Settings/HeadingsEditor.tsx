@@ -13,6 +13,7 @@ import { NewSectionDialog } from "./NewSectionDialog";
 
 const columns = "setting_id,setting_name,setting_object,schema_version,created_at,updated_at";
 const inputClass = "mt-1.5 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-gray-600 dark:bg-gray-900 dark:disabled:bg-gray-800";
+const isV2Template = (template: TemplateDefinition | undefined) => template?.layout_definition.variant === "puck" && "schema_version" in template.layout_definition && template.layout_definition.schema_version === 2;
 
 export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved: boolean) => void }) => {
   const [saved, setSaved] = useState<SettingsType<HomepageHeadingManifest> | null>(null);
@@ -101,7 +102,7 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
       const template = templates.find(t => t.template_key === item.template_key && t.is_published);
       if (!template) { errors.push(`${item.section_key}: choose an available template.`); continue; }
       const fields = item.data_schema.fields.map(field => field.key);
-      if (template.slots.some(slot => slot.required && !validBinding(item.field_bindings?.[slot.key], fields))) {
+      if (!isV2Template(template) && template.slots.some(slot => slot.required && !validBinding(item.field_bindings?.[slot.key], fields))) {
         errors.push(`${item.section_key}: bind all required template slots to table fields.`);
       }
     }
@@ -204,7 +205,9 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
               <div className="mt-5 border-t border-gray-100 pt-5 dark:border-gray-700">
                 <label className="text-sm font-medium">Reusable template<select disabled={!editing} className={inputClass} value={section.template_key ?? ""} onChange={e => patch({ template_key: e.target.value || null, enabled: false, field_bindings: {} })}>
                   <option value="">Select a template</option>{templates.filter(t => t.is_published).map(t => <option key={t.template_key} value={t.template_key}>{t.display_name}</option>)}</select></label>
-                {templates.find(t => t.template_key === section.template_key) && <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {isV2Template(templates.find(t => t.template_key === section.template_key)) ?
+                  <div className="mt-4 rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-gray-600 dark:text-gray-300">This template owns its data source and column bindings. Use <strong>Settings → Section templates → Edit layout</strong> to change them.</div>
+                  : templates.find(t => t.template_key === section.template_key) && <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {templates.find(t => t.template_key === section.template_key)!.slots.map(slot => {
                     const binding = section.field_bindings?.[slot.key];
                     const field = typeof binding === "string" ? binding : binding?.field || "";
