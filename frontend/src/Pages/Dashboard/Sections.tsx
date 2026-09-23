@@ -81,7 +81,7 @@ export default function SectionsDashboard() {
           {s.section_key.replaceAll("_", " ")}{s.enabled ? " · Live" : " · Draft"}</Link>)}</div>}
       {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       {notice && <p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</p>}
-      {!section && !loading && <p className="rounded-xl border p-6 text-sm">Choose a created section, or create one in <Link className="text-primary underline" to="/dashboard/setting">Settings</Link>.</p>}
+      {!section && !loading && <p className="rounded-xl border p-6 text-sm">Choose a created section, or create one in <Link className="text-primary underline" to="/dashboard/settings/headings">Settings</Link>.</p>}
       {section && <>
         <div className="flex items-center justify-between"><h2 className="text-xl font-semibold capitalize">{section.section_key.replaceAll("_", " ")}</h2>
           <button type="button" onClick={() => setDraft({ display_order: rows.length, is_visible: false })} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-white"><Plus size={16}/>Add record</button></div>
