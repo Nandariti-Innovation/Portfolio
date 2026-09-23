@@ -779,3 +779,19 @@ em,
     width: 100% !important;
   }
 }
+
+/* Keep Puck's draggable wrapper in sync with a block's visual dimensions. */
+[data-puck-component]:has(> [data-template-width="fit"]) { width: fit-content; flex: 0 0 auto; }
+[data-puck-component]:has(> [data-template-width="full"]) { width: 100%; flex: 0 0 100%; }
+[data-puck-component]:has(> [data-template-width="25"]) { width: 25%; flex: 0 0 25%; }
+[data-puck-component]:has(> [data-template-width="33"]) { width: 33.333%; flex: 0 0 33.333%; }
+[data-puck-component]:has(> [data-template-width="50"]) { width: 50%; flex: 0 0 50%; }
+[data-puck-component]:has(> [data-template-width="66"]) { width: 66.667%; flex: 0 0 66.667%; }
+[data-puck-component]:has(> [data-template-width="75"]) { width: 75%; flex: 0 0 75%; }
+[data-puck-component]:has(> [data-template-height="fit"]) { height: fit-content; }
+[data-puck-component]:has(> [data-template-height="full"]) { height: 100%; }
+[data-puck-component]:has(> [data-template-height="25"]) { height: 25%; }
+[data-puck-component]:has(> [data-template-height="33"]) { height: 33.333%; }
+[data-puck-component]:has(> [data-template-height="50"]) { height: 50%; }
+[data-puck-component]:has(> [data-template-height="66"]) { height: 66.667%; }
+[data-puck-component]:has(> [data-template-height="75"]) { height: 75%; }

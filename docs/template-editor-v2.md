@@ -61,6 +61,8 @@ Each template must contain exactly one Repeating items block. Dynamic bindings a
 
 Containers provide the main visual controls: surface, padding, row/column/grid arrangement, gap, horizontal alignment, vertical alignment, and corner radius. Text blocks provide size, weight, alignment, and tone. Images provide aspect ratio, fit, and corner radius. Buttons provide style, size, width, and target behavior.
 
+Every block and container also exposes **Width** and **Height** controls. Available values are Auto, Fit content, Full (100%), 25%, 33%, 50%, 66%, and 75%. Percentage height requires an ancestor with a defined height; otherwise Auto or Fit content is normally the appropriate choice. Puck's draggable wrapper receives the same dimensions, so row and grid layouts look the same in the editor and on the public homepage.
+
 These are intentionally curated controls. Users do not edit raw CSS or breakpoints.
 
 ## Static and dynamic values

@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components, @typescript-eslint/no-explicit-any, react-hooks/rules-of-hooks -- Puck invokes registry render functions as React components; the lint rule cannot infer that contract */
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Config, Data, Slot } from "@puckeditor/core";
@@ -20,23 +20,25 @@ import {
 
 type SourceMode = "static" | "dynamic";
 type TextStyle = "heading" | "subheading" | "paragraph" | "text";
-type TextProps = { contentMode: SourceMode; contentValue: string; contentField: string; size: "small" | "medium" | "large" | "xlarge"; weight: "regular" | "medium" | "bold"; align: "left" | "center" | "right"; tone: "default" | "muted" | "accent" };
+type SizeChoice = "auto" | "fit" | "full" | "25" | "33" | "50" | "66" | "75";
+type SizingProps = { width?: SizeChoice; height?: SizeChoice };
+type TextProps = SizingProps & { contentMode: SourceMode; contentValue: string; contentField: string; size: "small" | "medium" | "large" | "xlarge"; weight: "regular" | "medium" | "bold"; align: "left" | "center" | "right"; tone: "default" | "muted" | "accent" };
 type Blocks = {
-  SectionHeading: Record<string, never>;
-  Collection: { item: Slot; preset: CardPreset; sourceSection: string; limit: number; orderBy: string; orderDirection: "asc" | "desc"; layout: "grid" | "stack" | "timeline"; desktopColumns: "1" | "2" | "3" | "4"; gap: "small" | "medium" | "large" };
-  Group: { content: Slot; surface: "none" | "card" | "accent"; padding: "none" | "small" | "medium" | "large"; arrangement: "column" | "row" | "grid"; gap: "small" | "medium" | "large"; justify: "start" | "center" | "between"; align: "start" | "center" | "end"; radius: "none" | "medium" | "large" };
+  SectionHeading: SizingProps;
+  Collection: SizingProps & { item: Slot; preset: CardPreset; sourceSection: string; limit: number; orderBy: string; orderDirection: "asc" | "desc"; layout: "grid" | "stack" | "timeline"; desktopColumns: "1" | "2" | "3" | "4"; gap: "small" | "medium" | "large" };
+  Group: SizingProps & { content: Slot; surface: "none" | "card" | "accent"; padding: "none" | "small" | "medium" | "large"; arrangement: "column" | "row" | "grid"; gap: "small" | "medium" | "large"; justify: "start" | "center" | "between"; align: "start" | "center" | "end"; radius: "none" | "medium" | "large" };
   Heading: TextProps;
   Subheading: TextProps;
   Paragraph: TextProps;
   InlineText: TextProps;
-  ImageBlock: { srcMode: SourceMode; srcValue: string; srcField: string; altMode: SourceMode; altValue: string; altField: string; shape: "portrait" | "square" | "landscape"; fit: "cover" | "contain"; radius: "none" | "medium" | "large" };
-  TagsBlock: { valuesMode: SourceMode; valuesValue: string; valuesField: string; tone: "default" | "accent" };
-  DateBlock: { dateMode: SourceMode; dateValue: string; dateField: string; format: "month-year" | "medium" | "iso" };
-  Button: { labelMode: SourceMode; labelValue: string; labelField: string; hrefMode: SourceMode; hrefValue: string; hrefField: string; hrefPrefix: string; variant: "primary" | "secondary" | "outline" | "text"; size: "small" | "medium" | "large"; fullWidth: boolean; newTab: boolean };
-  LinkBlock: { labelMode: SourceMode; labelValue: string; labelField: string; hrefMode: SourceMode; hrefValue: string; hrefField: string; hrefPrefix: string; newTab: boolean };
-  Index: Record<string, never>;
-  Divider: Record<string, never>;
-  Spacer: { size: "small" | "medium" | "large" };
+  ImageBlock: SizingProps & { srcMode: SourceMode; srcValue: string; srcField: string; altMode: SourceMode; altValue: string; altField: string; shape: "portrait" | "square" | "landscape"; fit: "cover" | "contain"; radius: "none" | "medium" | "large" };
+  TagsBlock: SizingProps & { valuesMode: SourceMode; valuesValue: string; valuesField: string; tone: "default" | "accent" };
+  DateBlock: SizingProps & { dateMode: SourceMode; dateValue: string; dateField: string; format: "month-year" | "medium" | "iso" };
+  Button: SizingProps & { labelMode: SourceMode; labelValue: string; labelField: string; hrefMode: SourceMode; hrefValue: string; hrefField: string; hrefPrefix: string; variant: "primary" | "secondary" | "outline" | "text"; size: "small" | "medium" | "large"; fullWidth: boolean; newTab: boolean };
+  LinkBlock: SizingProps & { labelMode: SourceMode; labelValue: string; labelField: string; hrefMode: SourceMode; hrefValue: string; hrefField: string; hrefPrefix: string; newTab: boolean };
+  Index: SizingProps;
+  Divider: SizingProps;
+  Spacer: SizingProps & { size: "small" | "medium" | "large" };
 };
 
 export type PuckTemplateData = Data<Blocks>;
@@ -86,6 +88,26 @@ const optionsFor = (fields: SectionDataField[]) => fields.map((field) => ({ labe
 const modeField = (label: string) => ({ type: "select" as const, label: `${label} source`, options: [{ label: "Static", value: "static" }, { label: "Database field", value: "dynamic" }] });
 const selectField = (label: string, fields: SectionDataField[]) => ({ type: "select" as const, label, options: optionsFor(fields) });
 const select = (label: string, values: string[]) => ({ type: "select" as const, label, options: values.map((value) => ({ label: value.replaceAll("-", " "), value })) });
+const sizeOptions = [
+  { label: "Auto", value: "auto" }, { label: "Fit content", value: "fit" }, { label: "Full (100%)", value: "full" },
+  { label: "25%", value: "25" }, { label: "33%", value: "33" }, { label: "50%", value: "50" },
+  { label: "66%", value: "66" }, { label: "75%", value: "75" },
+];
+const sizingFields = {
+  width: { type: "select" as const, label: "Width", options: sizeOptions },
+  height: { type: "select" as const, label: "Height", options: sizeOptions },
+};
+const withSizingFields = (fields: Record<string, unknown>) => ({ ...fields, ...sizingFields });
+const sizingDefaults = (width: SizeChoice = "auto"): SizingProps => ({ width, height: "auto" });
+const sizeValue = (value: unknown): CSSProperties["width"] => ({ fit: "fit-content", full: "100%", "25": "25%", "33": "33.333%", "50": "50%", "66": "66.667%", "75": "75%" }[String(value)] || "auto");
+const sizeAttributes = (props: SizingProps) => ({
+  style: { width: sizeValue(props.width), height: sizeValue(props.height) },
+  "data-template-width": props.width || "auto",
+  "data-template-height": props.height || "auto",
+});
+function Sized({ props, className = "", children }: { props: SizingProps; className?: string; children: ReactNode }) {
+  return <div {...sizeAttributes(props)} className={className}>{children}</div>;
+}
 const block = (type: keyof Blocks, props: Record<string, unknown>): TemplateNode => ({ type, props: { id: `${type}-${crypto.randomUUID()}`, ...props } });
 
 const defaultText = (style: TextStyle, field: string, value: string): TextProps => ({
@@ -133,14 +155,14 @@ export function presetCard(preset: CardPreset): TemplateNode[] {
 }
 
 function textFields(props: Partial<TextProps>, fields: SectionDataField[], multiline: boolean) {
-  return {
+  return withSizingFields({
     contentMode: modeField("Content"),
     ...(props.contentMode === "dynamic" ? { contentField: selectField("Database column", fields) } : { contentValue: { type: multiline ? "textarea" : "text", label: "Static content" } }),
     size: select("Text size", ["small", "medium", "large", "xlarge"]),
     weight: select("Weight", ["regular", "medium", "bold"]),
     align: select("Alignment", ["left", "center", "right"]),
     tone: select("Colour", ["default", "muted", "accent"]),
-  };
+  });
 }
 
 function useResolved(mode: SourceMode, staticValue: unknown, field: string, prefix = "") {
@@ -171,10 +193,10 @@ function TextElement({ kind, props }: { kind: TextStyle; props: TextProps }) {
   const value = useResolved(props.contentMode, props.contentValue, props.contentField);
   const label = Array.isArray(value) ? text(value[0]) : text(value);
   const className = `${kind === "heading" ? "font-serif" : ""} ${classes.textSize[props.size]} ${classes.weight[props.weight]} ${classes.textAlign[props.align]} ${classes.tone[props.tone]}`;
-  if (kind === "heading") return <h3 className={className}>{label}</h3>;
-  if (kind === "subheading") return <h4 className={className}>{label}</h4>;
-  if (kind === "text") return <span className={className}>{label}</span>;
-  return <p className={`${className} leading-6`}>{label}</p>;
+  if (kind === "heading") return <Sized props={props}><h3 className={className}>{label}</h3></Sized>;
+  if (kind === "subheading") return <Sized props={props}><h4 className={className}>{label}</h4></Sized>;
+  if (kind === "text") return <Sized props={props}><span className={className}>{label}</span></Sized>;
+  return <Sized props={props}><p className={`${className} leading-6`}>{label}</p></Sized>;
 }
 
 function SmartLink({ href, newTab, className, children }: { href: string; newTab: boolean; className: string; children: ReactNode }) {
@@ -198,17 +220,17 @@ export function createTemplateConfig(
   const sourceOptions = sources.map((item) => ({ label: item.heading.eyebrow || item.section_key, value: item.section_key }));
   const textComponent = (kind: TextStyle, label: string, multiline: boolean) => ({
     label,
-    defaultProps: { ...defaultText(kind, "", label), contentMode: "static" },
+    defaultProps: { ...defaultText(kind, "", label), contentMode: "static", ...sizingDefaults("fit") },
     fields: textFields({ contentMode: "static" }, textColumns, multiline),
     resolveFields: (data: { props: TextProps }) => textFields(data.props, textColumns, multiline),
     render: (props: any) => <TextElement kind={kind} props={props as TextProps}/>,
   });
 
   const config = { components: {
-    SectionHeading: { label: "Section heading", render: () => <HomepageSectionHeading section={section}/> },
+    SectionHeading: { label: "Section heading", fields: sizingFields, defaultProps: sizingDefaults("full"), render: (props: any) => <Sized props={props}><HomepageSectionHeading section={section}/></Sized> },
     Collection: {
       label: "Repeating items",
-      fields: {
+      fields: withSizingFields({
         preset: { type: "select", label: "Card preset (changing it replaces the card)", options: [{ label: "Project cards", value: "project" }, { label: "Experience items", value: "experience" }, { label: "Blog cards", value: "blog" }] },
         sourceSection: { type: "select", label: "Data source", options: sourceOptions },
         limit: { type: "number", label: "Items to show", min: 1, max: 12 },
@@ -218,63 +240,63 @@ export function createTemplateConfig(
         desktopColumns: select("Desktop columns", ["1", "2", "3", "4"]),
         gap: select("Gap", ["small", "medium", "large"]),
         item: { type: "slot", allow: ["Group", "Heading", "Subheading", "Paragraph", "InlineText", "ImageBlock", "TagsBlock", "DateBlock", "Button", "LinkBlock", "Index", "Divider", "Spacer"] },
-      },
-      defaultProps: { preset: "project", sourceSection: sources[0]?.section_key || "project", limit: 3, orderBy: sortColumns[0]?.key || "project_priority", orderDirection: "asc", layout: "grid", desktopColumns: "3", gap: "medium", item: presetCard("project") },
+      }),
+      defaultProps: { preset: "project", sourceSection: sources[0]?.section_key || "project", limit: 3, orderBy: sortColumns[0]?.key || "project_priority", orderDirection: "asc", layout: "grid", desktopColumns: "3", gap: "medium", item: presetCard("project"), ...sizingDefaults("full") },
       resolveData: (data: any, { changed }: { changed: Record<string, boolean> }) => changed.preset ? { ...data, props: { ...data.props, item: presetCard(data.props.preset) } } : data,
-      render: ({ item: Item, layout, desktopColumns, gap, puck }: any) => {
+      render: ({ item: Item, layout, desktopColumns, gap, puck, width, height }: any) => {
         const collectionClass = layout === "timeline" ? `grid border-l border-[#ff6b24]/70 pl-5 ${classes.gap[gap]}` : layout === "stack" ? `grid grid-cols-1 ${classes.gap[gap]}` : `grid grid-cols-1 ${classes.columns[desktopColumns]} ${classes.gap[gap]}`;
         const items = puck.isEditing ? (section.items.length ? section.items.slice(0, 3) : [{ id: "preview" }]) : section.items;
-        return <div className={collectionClass}>{items.map((item, index) => <ItemContext.Provider key={String(item.id ?? item.project_id ?? item.work_id ?? index)} value={{ item, index }}><div className="min-w-0"><Item minEmptyHeight={100}/></div></ItemContext.Provider>)}</div>;
+        return <Sized props={{ width, height }} className={collectionClass}>{items.map((item, index) => <ItemContext.Provider key={String(item.id ?? item.project_id ?? item.work_id ?? index)} value={{ item, index }}><div className="min-w-0"><Item minEmptyHeight={100}/></div></ItemContext.Provider>)}</Sized>;
       },
     },
     Group: {
       label: "Container",
-      fields: {
+      fields: withSizingFields({
         surface: select("Surface", ["none", "card", "accent"]), padding: select("Padding", ["none", "small", "medium", "large"]),
         arrangement: select("Layout", ["column", "row", "grid"]), gap: select("Gap", ["small", "medium", "large"]),
         justify: select("Horizontal alignment", ["start", "center", "between"]), align: select("Vertical alignment", ["start", "center", "end"]),
         radius: select("Corners", ["none", "medium", "large"]), content: { type: "slot", disallow: ["Collection", "SectionHeading"] },
-      },
-      defaultProps: { surface: "none", padding: "none", arrangement: "column", gap: "small", justify: "start", align: "start", radius: "none", content: [] },
-      render: ({ content: Content, surface, padding, arrangement, gap, justify, align, radius }: any) => <div className={`${classes.surface[surface]} ${classes.padding[padding]} ${classes.arrangement[arrangement]} ${classes.gap[gap]} ${classes.justify[justify]} ${classes.align[align]} ${classes.radius[radius]}`}><Content minEmptyHeight={40}/></div>,
+      }),
+      defaultProps: { surface: "none", padding: "none", arrangement: "column", gap: "small", justify: "start", align: "start", radius: "none", content: [], ...sizingDefaults("full") },
+      render: ({ content: Content, surface, padding, arrangement, gap, justify, align, radius, width, height }: any) => <Sized props={{ width, height }}><Content minEmptyHeight={40} className={`template-layout-${arrangement} ${classes.surface[surface]} ${classes.padding[padding]} ${classes.arrangement[arrangement]} ${classes.gap[gap]} ${classes.justify[justify]} ${classes.align[align]} ${classes.radius[radius]}`}/></Sized>,
     },
     Heading: textComponent("heading", "Heading", false),
     Subheading: textComponent("subheading", "Subheading", false),
     Paragraph: textComponent("paragraph", "Paragraph", true),
     InlineText: textComponent("text", "Text", false),
     ImageBlock: {
-      label: "Image", defaultProps: { srcMode: "static", srcValue: "", srcField: "", altMode: "static", altValue: "", altField: "", shape: "portrait", fit: "cover", radius: "none" },
-      fields: { srcMode: modeField("Image"), srcValue: { type: "text", label: "Image URL or storage path" }, altMode: modeField("Alternative text"), altValue: { type: "text", label: "Alternative text" }, shape: select("Shape", ["portrait", "square", "landscape"]), fit: select("Fit", ["cover", "contain"]), radius: select("Corners", ["none", "medium", "large"]) },
-      resolveFields: (data: any) => ({ srcMode: modeField("Image"), ...(data.props.srcMode === "dynamic" ? { srcField: selectField("Image column", imageColumns) } : { srcValue: { type: "text", label: "Image URL or storage path" } }), altMode: modeField("Alternative text"), ...(data.props.altMode === "dynamic" ? { altField: selectField("Alternative-text column", textColumns) } : { altValue: { type: "text", label: "Alternative text" } }), shape: select("Shape", ["portrait", "square", "landscape"]), fit: select("Fit", ["cover", "contain"]), radius: select("Corners", ["none", "medium", "large"]) }),
-      render: (props: any) => { const src = imageSource(useResolved(props.srcMode, props.srcValue, props.srcField)); const alt = text(useResolved(props.altMode, props.altValue, props.altField)); return src ? <img src={src} alt={alt} loading="lazy" decoding="async" className={`block w-full ${classes.image[props.shape]} ${classes.fit[props.fit]} ${classes.radius[props.radius]}`}/> : <div aria-label={alt || undefined} className={`w-full bg-[#302117] ${classes.image[props.shape]} ${classes.radius[props.radius]}`}/>; },
+      label: "Image", defaultProps: { srcMode: "static", srcValue: "", srcField: "", altMode: "static", altValue: "", altField: "", shape: "portrait", fit: "cover", radius: "none", ...sizingDefaults("full") },
+      fields: withSizingFields({ srcMode: modeField("Image"), srcValue: { type: "text", label: "Image URL or storage path" }, altMode: modeField("Alternative text"), altValue: { type: "text", label: "Alternative text" }, shape: select("Shape", ["portrait", "square", "landscape"]), fit: select("Fit", ["cover", "contain"]), radius: select("Corners", ["none", "medium", "large"]) }),
+      resolveFields: (data: any) => withSizingFields({ srcMode: modeField("Image"), ...(data.props.srcMode === "dynamic" ? { srcField: selectField("Image column", imageColumns) } : { srcValue: { type: "text", label: "Image URL or storage path" } }), altMode: modeField("Alternative text"), ...(data.props.altMode === "dynamic" ? { altField: selectField("Alternative-text column", textColumns) } : { altValue: { type: "text", label: "Alternative text" } }), shape: select("Shape", ["portrait", "square", "landscape"]), fit: select("Fit", ["cover", "contain"]), radius: select("Corners", ["none", "medium", "large"]) }),
+      render: (props: any) => { const src = imageSource(useResolved(props.srcMode, props.srcValue, props.srcField)); const alt = text(useResolved(props.altMode, props.altValue, props.altField)); return <Sized props={props}>{src ? <img src={src} alt={alt} loading="lazy" decoding="async" className={`block size-full ${classes.image[props.shape]} ${classes.fit[props.fit]} ${classes.radius[props.radius]}`}/> : <div aria-label={alt || undefined} className={`size-full bg-[#302117] ${classes.image[props.shape]} ${classes.radius[props.radius]}`}/>}</Sized>; },
     },
     TagsBlock: {
-      label: "Tags / list", defaultProps: { valuesMode: "static", valuesValue: "React, TypeScript", valuesField: "", tone: "default" },
-      fields: { valuesMode: modeField("Values"), valuesValue: { type: "text", label: "Comma-separated values" }, tone: select("Colour", ["default", "accent"]) },
-      resolveFields: (data: any) => ({ valuesMode: modeField("Values"), ...(data.props.valuesMode === "dynamic" ? { valuesField: selectField("List column", listColumns) } : { valuesValue: { type: "text", label: "Comma-separated values" } }), tone: select("Colour", ["default", "accent"]) }),
-      render: (props: any) => { const raw = useResolved(props.valuesMode, props.valuesValue, props.valuesField); const values = Array.isArray(raw) ? raw.filter((value): value is string => typeof value === "string") : text(raw).split(",").map((value) => value.trim()).filter(Boolean); return <div className="flex flex-wrap gap-2">{values.slice(0, 12).map((value) => <span key={value} className={`border border-white/15 px-2 py-1 font-mono text-xs ${props.tone === "accent" ? "text-[#ff6b24]" : ""}`}>{value}</span>)}</div>; },
+      label: "Tags / list", defaultProps: { valuesMode: "static", valuesValue: "React, TypeScript", valuesField: "", tone: "default", ...sizingDefaults("fit") },
+      fields: withSizingFields({ valuesMode: modeField("Values"), valuesValue: { type: "text", label: "Comma-separated values" }, tone: select("Colour", ["default", "accent"]) }),
+      resolveFields: (data: any) => withSizingFields({ valuesMode: modeField("Values"), ...(data.props.valuesMode === "dynamic" ? { valuesField: selectField("List column", listColumns) } : { valuesValue: { type: "text", label: "Comma-separated values" } }), tone: select("Colour", ["default", "accent"]) }),
+      render: (props: any) => { const raw = useResolved(props.valuesMode, props.valuesValue, props.valuesField); const values = Array.isArray(raw) ? raw.filter((value): value is string => typeof value === "string") : text(raw).split(",").map((value) => value.trim()).filter(Boolean); return <Sized props={props} className="flex flex-wrap gap-2">{values.slice(0, 12).map((value) => <span key={value} className={`border border-white/15 px-2 py-1 font-mono text-xs ${props.tone === "accent" ? "text-[#ff6b24]" : ""}`}>{value}</span>)}</Sized>; },
     },
     DateBlock: {
-      label: "Date", defaultProps: { dateMode: "static", dateValue: "2026-01-01", dateField: "", format: "medium" },
-      fields: { dateMode: modeField("Date"), dateValue: { type: "text", label: "Date" }, format: select("Format", ["month-year", "medium", "iso"]) },
-      resolveFields: (data: any) => ({ dateMode: modeField("Date"), ...(data.props.dateMode === "dynamic" ? { dateField: selectField("Date column", dateColumns) } : { dateValue: { type: "text", label: "Date" } }), format: select("Format", ["month-year", "medium", "iso"]) }),
-      render: (props: any) => { const raw = text(useResolved(props.dateMode, props.dateValue, props.dateField)); const date = new Date(raw); const label = !raw || Number.isNaN(date.getTime()) ? "" : props.format === "iso" ? date.toISOString().slice(0, 10) : date.toLocaleDateString("en-US", props.format === "month-year" ? { month: "short", year: "numeric" } : { dateStyle: "medium" }); return <time className="font-mono text-xs uppercase text-[#ff6b24]">{label}</time>; },
+      label: "Date", defaultProps: { dateMode: "static", dateValue: "2026-01-01", dateField: "", format: "medium", ...sizingDefaults("fit") },
+      fields: withSizingFields({ dateMode: modeField("Date"), dateValue: { type: "text", label: "Date" }, format: select("Format", ["month-year", "medium", "iso"]) }),
+      resolveFields: (data: any) => withSizingFields({ dateMode: modeField("Date"), ...(data.props.dateMode === "dynamic" ? { dateField: selectField("Date column", dateColumns) } : { dateValue: { type: "text", label: "Date" } }), format: select("Format", ["month-year", "medium", "iso"]) }),
+      render: (props: any) => { const raw = text(useResolved(props.dateMode, props.dateValue, props.dateField)); const date = new Date(raw); const label = !raw || Number.isNaN(date.getTime()) ? "" : props.format === "iso" ? date.toISOString().slice(0, 10) : date.toLocaleDateString("en-US", props.format === "month-year" ? { month: "short", year: "numeric" } : { dateStyle: "medium" }); return <Sized props={props}><time className="font-mono text-xs uppercase text-[#ff6b24]">{label}</time></Sized>; },
     },
     Button: {
-      label: "Button", defaultProps: { labelMode: "static", labelValue: "Button", labelField: "", hrefMode: "static", hrefValue: "/", hrefField: "", hrefPrefix: "", variant: "primary", size: "medium", fullWidth: false, newTab: false },
-      fields: { labelMode: modeField("Label"), labelValue: { type: "text", label: "Label" }, hrefMode: modeField("Destination"), hrefValue: { type: "text", label: "Internal path or HTTPS URL" }, hrefPrefix: { type: "text", label: "Optional path prefix" }, variant: select("Style", ["primary", "secondary", "outline", "text"]), size: select("Size", ["small", "medium", "large"]), fullWidth: { type: "radio", label: "Width", options: [{ label: "Automatic", value: false }, { label: "Full width", value: true }] }, newTab: { type: "radio", label: "External link", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } },
-      resolveFields: (data: any) => ({ labelMode: modeField("Label"), ...(data.props.labelMode === "dynamic" ? { labelField: selectField("Label column", textColumns) } : { labelValue: { type: "text", label: "Label" } }), hrefMode: modeField("Destination"), ...(data.props.hrefMode === "dynamic" ? { hrefField: selectField("URL or ID column", urlColumns), hrefPrefix: { type: "text", label: "Optional path prefix, e.g. /project/" } } : { hrefValue: { type: "text", label: "Internal path or HTTPS URL" } }), variant: select("Style", ["primary", "secondary", "outline", "text"]), size: select("Size", ["small", "medium", "large"]), fullWidth: { type: "radio", label: "Width", options: [{ label: "Automatic", value: false }, { label: "Full width", value: true }] }, newTab: { type: "radio", label: "External link", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } }),
-      render: (props: any) => { const label = text(useResolved(props.labelMode, props.labelValue, props.labelField)); const href = safeHref(useResolved(props.hrefMode, props.hrefValue, props.hrefField, props.hrefPrefix)); const variant = { primary: "bg-[#ff6b24] text-white", secondary: "bg-white text-black", outline: "border border-white/40 text-white", text: "text-[#ff6b24]" }[props.variant as "primary" | "secondary" | "outline" | "text"]; const size = { small: "px-3 py-2 text-xs", medium: "px-4 py-2.5 text-sm", large: "px-6 py-3 text-base" }[props.size as "small" | "medium" | "large"]; return <SmartLink href={href} newTab={props.newTab} className={`inline-flex items-center justify-center gap-2 rounded-lg font-medium !no-underline ${variant} ${size} ${props.fullWidth ? "w-full" : "w-auto"}`}>{label}<ArrowUpRight size={15}/></SmartLink>; },
+      label: "Button", defaultProps: { labelMode: "static", labelValue: "Button", labelField: "", hrefMode: "static", hrefValue: "/", hrefField: "", hrefPrefix: "", variant: "primary", size: "medium", fullWidth: false, newTab: false, ...sizingDefaults("fit") },
+      fields: withSizingFields({ labelMode: modeField("Label"), labelValue: { type: "text", label: "Label" }, hrefMode: modeField("Destination"), hrefValue: { type: "text", label: "Internal path or HTTPS URL" }, hrefPrefix: { type: "text", label: "Optional path prefix" }, variant: select("Style", ["primary", "secondary", "outline", "text"]), size: select("Size", ["small", "medium", "large"]), newTab: { type: "radio", label: "External link", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } }),
+      resolveFields: (data: any) => withSizingFields({ labelMode: modeField("Label"), ...(data.props.labelMode === "dynamic" ? { labelField: selectField("Label column", textColumns) } : { labelValue: { type: "text", label: "Label" } }), hrefMode: modeField("Destination"), ...(data.props.hrefMode === "dynamic" ? { hrefField: selectField("URL or ID column", urlColumns), hrefPrefix: { type: "text", label: "Optional path prefix, e.g. /project/" } } : { hrefValue: { type: "text", label: "Internal path or HTTPS URL" } }), variant: select("Style", ["primary", "secondary", "outline", "text"]), size: select("Size", ["small", "medium", "large"]), newTab: { type: "radio", label: "External link", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } }),
+      render: (props: any) => { const label = text(useResolved(props.labelMode, props.labelValue, props.labelField)); const href = safeHref(useResolved(props.hrefMode, props.hrefValue, props.hrefField, props.hrefPrefix)); const variant = { primary: "bg-[#ff6b24] text-white", secondary: "bg-white text-black", outline: "border border-white/40 text-white", text: "text-[#ff6b24]" }[props.variant as "primary" | "secondary" | "outline" | "text"]; const size = { small: "px-3 py-2 text-xs", medium: "px-4 py-2.5 text-sm", large: "px-6 py-3 text-base" }[props.size as "small" | "medium" | "large"]; return <Sized props={props}><SmartLink href={href} newTab={props.newTab} className={`inline-flex items-center justify-center gap-2 rounded-lg font-medium !no-underline ${variant} ${size} ${props.fullWidth ? "w-full" : "w-auto"}`}>{label}<ArrowUpRight size={15}/></SmartLink></Sized>; },
     },
     LinkBlock: {
-      label: "Link", defaultProps: { labelMode: "static", labelValue: "View details", labelField: "", hrefMode: "static", hrefValue: "/", hrefField: "", hrefPrefix: "", newTab: false },
-      fields: { labelMode: modeField("Label"), labelValue: { type: "text", label: "Label" }, hrefMode: modeField("Destination"), hrefValue: { type: "text", label: "Internal path or HTTPS URL" }, hrefPrefix: { type: "text", label: "Optional path prefix" }, newTab: { type: "radio", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } },
-      resolveFields: (data: any) => ({ labelMode: modeField("Label"), ...(data.props.labelMode === "dynamic" ? { labelField: selectField("Label column", textColumns) } : { labelValue: { type: "text", label: "Label" } }), hrefMode: modeField("Destination"), ...(data.props.hrefMode === "dynamic" ? { hrefField: selectField("URL or ID column", urlColumns), hrefPrefix: { type: "text", label: "Optional path prefix" } } : { hrefValue: { type: "text", label: "Internal path or HTTPS URL" } }), newTab: { type: "radio", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } }),
-      render: (props: any) => { const label = text(useResolved(props.labelMode, props.labelValue, props.labelField)); const href = safeHref(useResolved(props.hrefMode, props.hrefValue, props.hrefField, props.hrefPrefix)); return <SmartLink href={href} newTab={props.newTab} className="inline-flex items-center gap-2 font-mono text-xs text-[#ff6b24] !no-underline">{label}<ArrowUpRight size={15}/></SmartLink>; },
+      label: "Link", defaultProps: { labelMode: "static", labelValue: "View details", labelField: "", hrefMode: "static", hrefValue: "/", hrefField: "", hrefPrefix: "", newTab: false, ...sizingDefaults("fit") },
+      fields: withSizingFields({ labelMode: modeField("Label"), labelValue: { type: "text", label: "Label" }, hrefMode: modeField("Destination"), hrefValue: { type: "text", label: "Internal path or HTTPS URL" }, hrefPrefix: { type: "text", label: "Optional path prefix" }, newTab: { type: "radio", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } }),
+      resolveFields: (data: any) => withSizingFields({ labelMode: modeField("Label"), ...(data.props.labelMode === "dynamic" ? { labelField: selectField("Label column", textColumns) } : { labelValue: { type: "text", label: "Label" } }), hrefMode: modeField("Destination"), ...(data.props.hrefMode === "dynamic" ? { hrefField: selectField("URL or ID column", urlColumns), hrefPrefix: { type: "text", label: "Optional path prefix" } } : { hrefValue: { type: "text", label: "Internal path or HTTPS URL" } }), newTab: { type: "radio", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } }),
+      render: (props: any) => { const label = text(useResolved(props.labelMode, props.labelValue, props.labelField)); const href = safeHref(useResolved(props.hrefMode, props.hrefValue, props.hrefField, props.hrefPrefix)); return <Sized props={props}><SmartLink href={href} newTab={props.newTab} className="inline-flex items-center gap-2 font-mono text-xs text-[#ff6b24] !no-underline">{label}<ArrowUpRight size={15}/></SmartLink></Sized>; },
     },
-    Index: { label: "Item number", render: () => <ItemIndex/> },
-    Divider: { label: "Divider", render: () => <hr className="w-full border-white/20"/> },
-    Spacer: { label: "Spacing", fields: { size: select("Size", ["small", "medium", "large"]) }, defaultProps: { size: "medium" }, render: ({ size }: any) => <div aria-hidden="true" className={classes.spacer[size]}/> },
+    Index: { label: "Item number", fields: sizingFields, defaultProps: sizingDefaults("fit"), render: (props: any) => <Sized props={props}><ItemIndex/></Sized> },
+    Divider: { label: "Divider", fields: sizingFields, defaultProps: sizingDefaults("full"), render: (props: any) => <Sized props={props}><hr className="w-full border-white/20"/></Sized> },
+    Spacer: { label: "Spacing", fields: withSizingFields({ size: select("Size", ["small", "medium", "large"]) }), defaultProps: { size: "medium", ...sizingDefaults("full") }, render: (props: any) => <Sized props={props} className={classes.spacer[props.size]}><span aria-hidden="true"/></Sized> },
   } };
   return config as unknown as Config<Blocks>;
 }
@@ -405,7 +427,7 @@ export function asPuckLayout(template: TemplateDefinition | null, sources: Homep
 function LegacyNode({ node, section }: { node: TemplateNode; section: DynamicSection }) {
   const { item } = useContext(ItemContext);
   const value = (slot: unknown) => slotValue(item, section.field_bindings[String(slot)]);
-  if (node.type === "SectionHeading") return <HomepageSectionHeading section={section}/>;
+  if (node.type === "SectionHeading") return <Sized props={node.props}><HomepageSectionHeading section={section}/></Sized>;
   if (node.type === "Collection") {
     const gap = String(node.props.gap || "medium");
     const wrapper = node.props.layout === "timeline" ? `grid border-l border-[#ff6b24]/70 pl-5 ${classes.gap[gap]}` : node.props.layout === "stack" ? `grid ${classes.gap[gap]}` : `grid grid-cols-1 md:grid-cols-2 ${classes.columns[String(node.props.desktop || "3")]} ${classes.gap[gap]}`;
@@ -431,17 +453,17 @@ function V2Node({ node, section }: { node: TemplateNode; section: DynamicSection
     const gap = String(node.props.gap || "medium");
     const columns = String(node.props.desktopColumns || "3");
     const wrapper = node.props.layout === "timeline" ? `grid border-l border-[#ff6b24]/70 pl-5 ${classes.gap[gap]}` : node.props.layout === "stack" ? `grid grid-cols-1 ${classes.gap[gap]}` : `grid grid-cols-1 ${classes.columns[columns]} ${classes.gap[gap]}`;
-    return <div className={wrapper}>{section.items.map((record, index) => <ItemContext.Provider key={String(record.id ?? record.project_id ?? record.work_id ?? index)} value={{ item: record, index }}><NodeList nodes={(node.props.item as TemplateNode[]) || []} section={section}/></ItemContext.Provider>)}</div>;
+    return <Sized props={node.props} className={wrapper}>{section.items.map((record, index) => <ItemContext.Provider key={String(record.id ?? record.project_id ?? record.work_id ?? index)} value={{ item: record, index }}><NodeList nodes={(node.props.item as TemplateNode[]) || []} section={section}/></ItemContext.Provider>)}</Sized>;
   }
-  if (node.type === "Group") return <div className={`${classes.surface[String(node.props.surface)] || ""} ${classes.padding[String(node.props.padding)] || ""} ${classes.arrangement[String(node.props.arrangement)] || classes.arrangement.column} ${classes.gap[String(node.props.gap)] || classes.gap.small} ${classes.justify[String(node.props.justify)] || ""} ${classes.align[String(node.props.align)] || ""} ${classes.radius[String(node.props.radius)] || ""}`}><NodeList nodes={(node.props.content as TemplateNode[]) || []} section={section}/></div>;
+  if (node.type === "Group") return <Sized props={node.props} className={`${classes.surface[String(node.props.surface)] || ""} ${classes.padding[String(node.props.padding)] || ""} ${classes.arrangement[String(node.props.arrangement)] || classes.arrangement.column} ${classes.gap[String(node.props.gap)] || classes.gap.small} ${classes.justify[String(node.props.justify)] || ""} ${classes.align[String(node.props.align)] || ""} ${classes.radius[String(node.props.radius)] || ""}`}><NodeList nodes={(node.props.content as TemplateNode[]) || []} section={section}/></Sized>;
   if (["Heading", "Subheading", "Paragraph", "InlineText"].includes(node.type)) return <TextElement kind={node.type === "Heading" ? "heading" : node.type === "Subheading" ? "subheading" : node.type === "Paragraph" ? "paragraph" : "text"} props={node.props as unknown as TextProps}/>;
-  if (node.type === "ImageBlock") { const src = imageSource(resolved("src")); const alt = text(resolved("alt")); return src ? <img src={src} alt={alt} loading="lazy" decoding="async" className={`block w-full ${classes.image[String(node.props.shape)]} ${classes.fit[String(node.props.fit)]} ${classes.radius[String(node.props.radius)]}`}/> : <div aria-label={alt || undefined} className={`w-full bg-[#302117] ${classes.image[String(node.props.shape)]} ${classes.radius[String(node.props.radius)]}`}/>; }
-  if (node.type === "TagsBlock") { const raw = resolved("values"); const values = Array.isArray(raw) ? raw.map(String) : text(raw).split(",").map((value) => value.trim()).filter(Boolean); return <div className="flex flex-wrap gap-2">{values.slice(0, 12).map((tag) => <span key={tag} className={`border border-white/15 px-2 py-1 font-mono text-xs ${node.props.tone === "accent" ? "text-[#ff6b24]" : ""}`}>{tag}</span>)}</div>; }
-  if (node.type === "DateBlock") { const raw = text(resolved("date")); const date = new Date(raw); const label = !raw || Number.isNaN(date.getTime()) ? "" : node.props.format === "iso" ? date.toISOString().slice(0, 10) : date.toLocaleDateString("en-US", node.props.format === "month-year" ? { month: "short", year: "numeric" } : { dateStyle: "medium" }); return <time className="font-mono text-xs uppercase text-[#ff6b24]">{label}</time>; }
-  if (node.type === "Button" || node.type === "LinkBlock") { const label = text(resolved("label")); const href = safeHref(resolved("href")); const isButton = node.type === "Button"; const variant = { primary: "bg-[#ff6b24] text-white", secondary: "bg-white text-black", outline: "border border-white/40 text-white", text: "text-[#ff6b24]" }[String(node.props.variant)] || "text-[#ff6b24]"; const size = { small: "px-3 py-2 text-xs", medium: "px-4 py-2.5 text-sm", large: "px-6 py-3 text-base" }[String(node.props.size)] || "text-xs"; return <SmartLink href={href} newTab={Boolean(node.props.newTab)} className={isButton ? `inline-flex items-center justify-center gap-2 rounded-lg font-medium !no-underline ${variant} ${size} ${node.props.fullWidth ? "w-full" : "w-auto"}` : "inline-flex items-center gap-2 font-mono text-xs text-[#ff6b24] !no-underline"}>{label}<ArrowUpRight size={15}/></SmartLink>; }
-  if (node.type === "Index") return <ItemIndex/>;
-  if (node.type === "Divider") return <hr className="w-full border-white/20"/>;
-  if (node.type === "Spacer") return <div aria-hidden="true" className={classes.spacer[String(node.props.size)]}/>;
+  if (node.type === "ImageBlock") { const src = imageSource(resolved("src")); const alt = text(resolved("alt")); return <Sized props={node.props}>{src ? <img src={src} alt={alt} loading="lazy" decoding="async" className={`block size-full ${classes.image[String(node.props.shape)]} ${classes.fit[String(node.props.fit)]} ${classes.radius[String(node.props.radius)]}`}/> : <div aria-label={alt || undefined} className={`size-full bg-[#302117] ${classes.image[String(node.props.shape)]} ${classes.radius[String(node.props.radius)]}`}/>}</Sized>; }
+  if (node.type === "TagsBlock") { const raw = resolved("values"); const values = Array.isArray(raw) ? raw.map(String) : text(raw).split(",").map((value) => value.trim()).filter(Boolean); return <Sized props={node.props} className="flex flex-wrap gap-2">{values.slice(0, 12).map((tag) => <span key={tag} className={`border border-white/15 px-2 py-1 font-mono text-xs ${node.props.tone === "accent" ? "text-[#ff6b24]" : ""}`}>{tag}</span>)}</Sized>; }
+  if (node.type === "DateBlock") { const raw = text(resolved("date")); const date = new Date(raw); const label = !raw || Number.isNaN(date.getTime()) ? "" : node.props.format === "iso" ? date.toISOString().slice(0, 10) : date.toLocaleDateString("en-US", node.props.format === "month-year" ? { month: "short", year: "numeric" } : { dateStyle: "medium" }); return <Sized props={node.props}><time className="font-mono text-xs uppercase text-[#ff6b24]">{label}</time></Sized>; }
+  if (node.type === "Button" || node.type === "LinkBlock") { const label = text(resolved("label")); const href = safeHref(resolved("href")); const isButton = node.type === "Button"; const variant = { primary: "bg-[#ff6b24] text-white", secondary: "bg-white text-black", outline: "border border-white/40 text-white", text: "text-[#ff6b24]" }[String(node.props.variant)] || "text-[#ff6b24]"; const size = { small: "px-3 py-2 text-xs", medium: "px-4 py-2.5 text-sm", large: "px-6 py-3 text-base" }[String(node.props.size)] || "text-xs"; return <Sized props={node.props}><SmartLink href={href} newTab={Boolean(node.props.newTab)} className={isButton ? `inline-flex items-center justify-center gap-2 rounded-lg font-medium !no-underline ${variant} ${size} ${node.props.fullWidth ? "w-full" : "w-auto"}` : "inline-flex items-center gap-2 font-mono text-xs text-[#ff6b24] !no-underline"}>{label}<ArrowUpRight size={15}/></SmartLink></Sized>; }
+  if (node.type === "Index") return <Sized props={node.props}><ItemIndex/></Sized>;
+  if (node.type === "Divider") return <Sized props={node.props}><hr className="w-full border-white/20"/></Sized>;
+  if (node.type === "Spacer") return <Sized props={node.props} className={classes.spacer[String(node.props.size)]}><span aria-hidden="true"/></Sized>;
   return null;
 }
 
