@@ -6,7 +6,7 @@ import { useDashboardAccess } from "@/features/dashboardAccess/DashboardAccess";
 type Factor = { id: string; friendly_name?: string; status: string };
 type Passkey = { id: string; friendly_name?: string; created_at?: string };
 
-export default function Security() {
+export default function Security({ embedded = false }: { embedded?: boolean }) {
   const navigate = useNavigate();
   const { user, role, active, aal, isMfaSatisfied, refresh } = useDashboardAccess();
   const [factors, setFactors] = useState<Factor[]>([]);
@@ -77,7 +77,7 @@ export default function Security() {
     else { await supabase.auth.refreshSession(); await refresh(); await load(); }
   }
 
-  return <main className="h-full min-w-0 flex-1 overflow-y-auto bg-background p-5 text-gray-900 dark:bg-darkthemebg dark:text-white sm:p-8">
+  return <div className={embedded ? "text-gray-900 dark:text-white" : "h-full min-w-0 flex-1 overflow-y-auto bg-background p-5 text-gray-900 dark:bg-darkthemebg dark:text-white sm:p-8"}>
     <div className="mx-auto max-w-3xl space-y-6">
       <header><h1 className="text-3xl font-bold">My security</h1><p className="mt-2 text-sm text-gray-500">{user?.email} · Session assurance: {aal}</p>
         <p className="mt-2 text-sm">Role access: {active ? (["superadmin", "admin"].includes(role ?? "") ? "Full dashboard access" : role === "blank" ? "Pending role assignment" : `Assigned role: ${role}`) : "Inactive"}. Session security: {isMfaSatisfied ? "Verified" : "MFA verification required"}.</p>
@@ -112,5 +112,5 @@ export default function Security() {
         <button disabled={busy} onClick={() => void addPasskey()} className="rounded-lg border px-4 py-2 text-sm disabled:opacity-50">Add passkey</button>
       </section>
     </div>
-  </main>;
+  </div>;
 }
