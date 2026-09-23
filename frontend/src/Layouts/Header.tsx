@@ -13,9 +13,11 @@ const sections = [
   { test: (path: string) => /^\/dashboard\/projects\/?$/.test(path), title: "Projects", section: "Content", icon: Rocket },
   { test: (path: string) => /^\/dashboard\/experience\/?$/.test(path), title: "Experience", section: "Content", icon: BriefcaseBusiness },
   { test: (path: string) => /^\/dashboard\/blogs\/?$/.test(path), title: "Blogs", section: "Content", icon: BookOpenText },
-  { test: (path: string) => /^\/dashboard\/setting\/?$/.test(path), title: "Settings", section: "Account", icon: Settings },
-  { test: (path: string) => /^\/dashboard\/security\/?$/.test(path), title: "My security", section: "Account", icon: Settings },
-  { test: (path: string) => /^\/dashboard\/users\/?$/.test(path), title: "User management", section: "Account", icon: Settings },
+  { test: (path: string) => /^\/dashboard\/settings\/headings\/?$/.test(path), title: "Homepage headings", section: "Settings", icon: Settings },
+  { test: (path: string) => /^\/dashboard\/settings\/templates\/?$/.test(path), title: "Section templates", section: "Settings", icon: Settings },
+  { test: (path: string) => /^\/dashboard\/settings\/security\/?$/.test(path), title: "My security", section: "Settings", icon: Settings },
+  { test: (path: string) => /^\/dashboard\/settings\/users\/?$/.test(path), title: "User management", section: "Settings", icon: Settings },
+  { test: (path: string) => /^\/dashboard\/settings\/?$/.test(path), title: "Settings", section: "Account", icon: Settings },
   { test: (path: string) => /^\/dashboard\/?$/.test(path), title: "Overview", section: "Dashboard", icon: LayoutDashboard },
 ];
 
