@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from "@supabase/supabase-js";
 import supabase from "@/Superbase/client";
 import { useDashboardAccess } from "@/features/dashboardAccess/DashboardAccess";
 
@@ -8,7 +9,18 @@ type Permission = { permission_key: string; display_name: string };
 type Assignment = { role_key: string; permission_key: string };
 type AuthUser = { id: string; email?: string; invited_at?: string };
 
-export default function UserManagement() {
+async function failureMessage(failure: unknown) {
+  if (failure instanceof FunctionsHttpError) {
+    const body = await failure.context.json().catch(() => null) as { error?: string } | null;
+    return body?.error || `User service returned ${failure.context.status}.`;
+  }
+  if (failure instanceof FunctionsRelayError) return `User service relay error: ${failure.message}`;
+  if (failure instanceof FunctionsFetchError) return "User service is unavailable. Confirm that the dashboard-users Edge Function is deployed.";
+  if (failure && typeof failure === "object" && "message" in failure && typeof failure.message === "string") return failure.message;
+  return failure instanceof Error ? failure.message : "Unable to complete the request.";
+}
+
+export default function UserManagement({ embedded = false }: { embedded?: boolean }) {
   const { refresh } = useDashboardAccess();
   const [members, setMembers] = useState<Member[]>([]);
   const [authUsers, setAuthUsers] = useState<AuthUser[]>([]);
@@ -30,11 +42,17 @@ export default function UserManagement() {
       supabase.from("dashboard_role_permissions").select("role_key,permission_key"),
       supabase.functions.invoke("dashboard-users", { method: "GET" }),
     ]);
-    const failure = memberResponse.error || roleResponse.error || permissionResponse.error || assignmentResponse.error || userResponse.error;
+    const failure = memberResponse.error || roleResponse.error || permissionResponse.error || assignmentResponse.error;
     if (failure) { setError(failure.message); return; }
     setMembers(memberResponse.data ?? []); setRoles(roleResponse.data ?? []);
     setPermissions(permissionResponse.data ?? []); setAssignments(assignmentResponse.data ?? []);
-    setAuthUsers(userResponse.data?.users ?? []);
+    if (userResponse.error) {
+      setAuthUsers([]);
+      setError(await failureMessage(userResponse.error));
+    } else {
+      setAuthUsers(userResponse.data?.users ?? []);
+      setError("");
+    }
   }, []);
   useEffect(() => { void load(); }, [load]);
 
@@ -42,9 +60,9 @@ export default function UserManagement() {
     setBusy(true); setError(""); setNotice("");
     try {
       const result = await action();
-      if (result.error) throw new Error(result.error.message);
+      if (result.error) throw result.error;
       setNotice(success); await load(); await refresh();
-    } catch (failure) { setError(failure instanceof Error ? failure.message : "Unable to save"); }
+    } catch (failure) { setError(await failureMessage(failure)); }
     finally { setBusy(false); }
   }
 
@@ -65,7 +83,7 @@ export default function UserManagement() {
     "Permissions updated.");
   }
 
-  return <main className="h-full min-w-0 flex-1 overflow-y-auto bg-background p-5 text-gray-900 dark:bg-darkthemebg dark:text-white sm:p-8">
+  return <div className={embedded ? "text-gray-900 dark:text-white" : "h-full min-w-0 flex-1 overflow-y-auto bg-background p-5 text-gray-900 dark:bg-darkthemebg dark:text-white sm:p-8"}>
     <div className="mx-auto max-w-6xl space-y-6">
       <header><h1 className="text-3xl font-bold">User management</h1><p className="mt-1 text-sm text-gray-500">Invite users, assign roles, and choose which dashboard pages they can access.</p></header>
       {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-red-700">{error}</p>}
@@ -119,5 +137,5 @@ export default function UserManagement() {
         </article>)}
       </section>
     </div>
-  </main>;
+  </div>;
 }
