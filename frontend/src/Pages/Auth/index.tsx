@@ -63,7 +63,7 @@ export default function Auth() {
       if (password.length < 12) throw new Error("Use a password with at least 12 characters.");
       const result = await supabase.auth.updateUser({ password });
       if (result.error) throw result.error;
-      navigate("/dashboard/security", { replace: true });
+      navigate("/dashboard/settings/security", { replace: true });
     } catch (failure) { setError(failure instanceof Error ? failure.message : "Unable to set password"); }
     finally { setBusy(false); }
   }
