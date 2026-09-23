@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useDispatch } from "react-redux";
 import { AlertCircle, Check, Loader2, Pencil, Plus, RotateCcw, Save, X } from "lucide-react";
 import supabase from "@/Superbase/client";
 import type { SettingsType } from "@/StateManagement/Redux/@types";
-import type { AppDispatch } from "@/StateManagement/Redux/reduxStore";
-import { upsertSettingData } from "@/StateManagement/Redux/slices/settings";
 import {
   parseHeadingManifest,
   type HomepageHeadingManifest,
@@ -18,7 +15,6 @@ const columns = "setting_id,setting_name,setting_object,schema_version,created_a
 const inputClass = "mt-1.5 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-gray-600 dark:bg-gray-900 dark:disabled:bg-gray-800";
 
 export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved: boolean) => void }) => {
-  const dispatch = useDispatch<AppDispatch>();
   const [saved, setSaved] = useState<SettingsType<HomepageHeadingManifest> | null>(null);
   const [draft, setDraft] = useState<HomepageHeadingManifest>({});
   const [selected, setSelected] = useState("");
@@ -64,10 +60,9 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
     setDraft(normalized);
     setSelected((previous) => previous in parsed.manifest ? previous : parsed.sections[0]?.section_key || "");
     setEditing(false);
-    dispatch(upsertSettingData(next));
     setLoading(false);
     return true;
-  }, [dispatch]);
+  }, []);
 
   useEffect(() => { void load(); }, [load]);
   const changed = !!saved && JSON.stringify(draft) !== JSON.stringify(saved.setting_object);
@@ -150,7 +145,6 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
       setSaved(next);
       setDraft(normalized);
       setEditing(false);
-      dispatch(upsertSettingData(next));
       setNotice("Heading changes saved.");
     }
     setBusy(false);

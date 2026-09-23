@@ -1,8 +1,8 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FileText, HardDrive, Image, Loader2, Plus, RefreshCw, Search } from 'lucide-react';
 import { Dialog } from 'radix-ui';
 import { useDispatch, useSelector } from 'react-redux';
-import { settingContext } from '@/StateManagement/ContextAPI/SettingContext/SettingContext';
+import { useDashboardUi } from '@/features/dashboardUi/DashboardUi';
 import type { AppDispatch, RootState } from '@/StateManagement/Redux/reduxStore';
 import { fetchFiles } from '@/StateManagement/Redux/slices/storageslices';
 import { FileFormModal } from './Components/AddFileForm';
@@ -10,7 +10,7 @@ import { ImagesFolder } from './Components/ImagesFolder';
 
 const bytes = (value: number) => value >= 1048576 ? `${(value / 1048576).toFixed(1)} MB` : `${(value / 1024).toFixed(1)} KB`;
 export default function Media() {
-  const { collapsed } = useContext(settingContext);
+  const { collapsed } = useDashboardUi();
   const dispatch = useDispatch<AppDispatch>();
   const { files, loading, error } = useSelector((state: RootState) => state.storage);
   const [search, setSearch] = useState('');

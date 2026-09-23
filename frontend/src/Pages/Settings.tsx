@@ -1,7 +1,7 @@
-import { lazy, Suspense, useContext, useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { FileText, LayoutTemplate, Settings2, ShieldCheck, Users } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { settingContext } from "@/StateManagement/ContextAPI/SettingContext/SettingContext";
+import { useDashboardUi } from "@/features/dashboardUi/DashboardUi";
 import { HeadingsEditor } from "./Settings/HeadingsEditor";
 import { PAGE_PERMISSIONS, useDashboardAccess } from "@/features/dashboardAccess/DashboardAccess";
 
@@ -19,7 +19,7 @@ const panels = [
 ] as const;
 
 export const Settings = () => {
-  const { collapsed } = useContext(settingContext);
+  const { collapsed } = useDashboardUi();
   const { hasPermission } = useDashboardAccess();
   const location = useLocation();
   const navigate = useNavigate();

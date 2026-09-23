@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { tailwindMerge } from "../Utils/tailwindMerge";
 import {
@@ -19,7 +19,7 @@ import {
   User,
   X,
 } from "lucide-react";
-import { settingContext } from "@/StateManagement/ContextAPI/SettingContext/SettingContext";
+import { useDashboardUi } from "@/features/dashboardUi/DashboardUi";
 import { PAGE_PERMISSIONS, useDashboardAccess } from "@/features/dashboardAccess/DashboardAccess";
 import supabase from "@/Superbase/client";
 
@@ -41,18 +41,18 @@ const sectionItems: NavItemsTypes[] = [
 export const Sidebar: React.FC = () => {
   const { hasPermission, name, role } = useDashboardAccess();
   const location = useLocation();
-  const { collapsed, handleCollapsed, mobileOpen, handleMobileOpen } = useContext(settingContext);
+  const { collapsed, setCollapsed, mobileOpen, setMobileOpen } = useDashboardUi();
   const [sectionsOpen, setSectionsOpen] = useState(() => ["/dashboard/projects", "/dashboard/experience", "/dashboard/blogs", "/dashboard/sections"].some(path => location.pathname.startsWith(path)));
   const canSee = (item: NavItemsTypes) => !item.permission || hasPermission(item.permission) || (item.name === "Settings" && hasPermission(PAGE_PERMISSIONS.templates));
   const visibleSections = sectionItems.filter(canSee);
 
   useEffect(() => {
-    handleMobileOpen(false);
-  }, [location.pathname, handleMobileOpen]);
+    setMobileOpen(false);
+  }, [location.pathname, setMobileOpen]);
 
   return (
     <>
-      {mobileOpen && <button type="button" aria-label="Close dashboard navigation" onClick={() => handleMobileOpen(false)} className="fixed inset-0 z-40 cursor-default bg-slate-950/55 backdrop-blur-[2px] lg:hidden" />}
+      {mobileOpen && <button type="button" aria-label="Close dashboard navigation" onClick={() => setMobileOpen(false)} className="fixed inset-0 z-40 cursor-default bg-slate-950/55 backdrop-blur-[2px] lg:hidden" />}
       <aside
       className={tailwindMerge(
         "fixed inset-y-0 left-0 z-50 flex w-[280px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-white shadow-2xl transition-transform duration-300 ease-out lg:relative lg:inset-auto lg:z-auto lg:h-full lg:translate-x-0 lg:shadow-none lg:transition-[width]",
@@ -79,13 +79,13 @@ export const Sidebar: React.FC = () => {
           )}
         </div>
         <button
-          onClick={() => handleCollapsed(!collapsed)}
+          onClick={() => setCollapsed(!collapsed)}
           className="hidden cursor-pointer rounded-lg p-1.5 text-sidebar-foreground transition-colors hover:bg-sidebar-accent lg:block"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </button>
-        <button type="button" onClick={() => handleMobileOpen(false)} aria-label="Close dashboard navigation" className="grid size-9 cursor-pointer place-items-center rounded-lg text-sidebar-foreground hover:bg-sidebar-accent lg:hidden"><X size={20} /></button>
+        <button type="button" onClick={() => setMobileOpen(false)} aria-label="Close dashboard navigation" className="grid size-9 cursor-pointer place-items-center rounded-lg text-sidebar-foreground hover:bg-sidebar-accent lg:hidden"><X size={20} /></button>
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4" aria-label="Dashboard navigation">

@@ -1,26 +1,32 @@
-import { useProgress } from "@react-three/drei";
-import { Suspense, useCallback, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useRef, useState } from "react";
 import { Navigation } from "@/components/Navigation";
-import { PortfolioScene } from "@/components/scene/PortfolioScene";
-import { About } from "@/components/sections/About";
-import { Contact } from "@/components/sections/Contact";
 import { Hero } from "@/components/sections/Hero";
-import { DynamicSections } from "@/components/sections/DynamicSections";
 import { useScrollProgress } from "@/hooks/useScrollProgress";
+import { useFetchHomePage } from "@/Hooks/FetchHomePage";
 
-const App = ({ pageDataLoading }: { pageDataLoading: boolean }) => {
+const PortfolioScene = lazy(() =>
+  import("@/components/scene/PortfolioScene").then((module) => ({ default: module.PortfolioScene })),
+);
+const About = lazy(() =>
+  import("@/components/sections/About").then((module) => ({ default: module.About })),
+);
+const DynamicSections = lazy(() =>
+  import("@/components/sections/DynamicSections").then((module) => ({ default: module.DynamicSections })),
+);
+const Contact = lazy(() =>
+  import("@/components/sections/Contact").then((module) => ({ default: module.Contact })),
+);
+
+const App = () => {
+  const { pageDataLoading } = useFetchHomePage();
   const pageRef = useRef<HTMLElement>(null);
   const progress = useScrollProgress(pageRef);
   const [sceneReady, setSceneReady] = useState(false);
   const handleSceneReady = useCallback(() => setSceneReady(true), []);
   const isLoading = pageDataLoading || !sceneReady;
-  const { active, progress: assetProgress } = useProgress();
-  const hasAssetProgress = active && assetProgress > 0 && assetProgress < 100;
-  const loadingMessage = active
-    ? "Loading 3D assets…"
-    : !sceneReady
-      ? "Preparing your 3D experience…"
-      : "Loading page content…";
+  const loadingMessage = !sceneReady
+    ? "Preparing your 3D experience…"
+    : "Loading page content…";
 
   return (
     <main ref={pageRef} aria-busy={isLoading}>
@@ -41,29 +47,11 @@ const App = ({ pageDataLoading }: { pageDataLoading: boolean }) => {
               <div
                 className="loader-track"
                 role="progressbar"
-                aria-label={
-                  hasAssetProgress
-                    ? "3D asset loading progress"
-                    : loadingMessage
-                }
+                aria-label={loadingMessage}
                 aria-valuemin={0}
                 aria-valuemax={100}
-                aria-valuenow={
-                  hasAssetProgress ? Math.round(assetProgress) : undefined
-                }
               >
-                <span
-                  className={
-                    hasAssetProgress
-                      ? "loader-fill"
-                      : "loader-fill loader-indeterminate"
-                  }
-                  style={
-                    hasAssetProgress
-                      ? { width: `${assetProgress}%` }
-                      : undefined
-                  }
-                />
+                <span className="loader-fill loader-indeterminate" />
               </div>
               <p className="loader-hint">Good things take a moment.</p>
             </div>

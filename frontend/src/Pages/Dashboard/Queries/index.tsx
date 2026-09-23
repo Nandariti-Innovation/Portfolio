@@ -1,6 +1,6 @@
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Inbox, Loader2, RefreshCw, Search } from 'lucide-react';
-import { settingContext } from '@/StateManagement/ContextAPI/SettingContext/SettingContext';
+import { useDashboardUi } from '@/features/dashboardUi/DashboardUi';
 import supabase from '@/Superbase/client';
 
 type Query = { id: string; created_at: string; resend_id: string | null; payload: { name?: string; email?: string; company?: string; type?: string; message?: string } };
@@ -8,7 +8,7 @@ const control = 'rounded-md border border-gray-300 bg-white px-3 py-2 text-sm te
 const pageSize = 20;
 
 export default function Queries() {
-  const { collapsed } = useContext(settingContext);
+  const { collapsed } = useDashboardUi();
   const [search, setSearch] = useState('');
   const [term, setTerm] = useState('');
   const [type, setType] = useState('all');

@@ -1,7 +1,7 @@
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Loader2, Plus, Trash2 } from "lucide-react";
-import { settingContext } from "@/StateManagement/ContextAPI/SettingContext/SettingContext";
+import { useDashboardUi } from "@/features/dashboardUi/DashboardUi";
 import supabase from "@/Superbase/client";
 import { parseHeadingManifest, type HomepageSectionConfiguration, type SectionDataField } from "@/features/homepageSections/manifest";
 
@@ -11,7 +11,7 @@ const input = "mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3
 
 export default function SectionsDashboard() {
   const { sectionKey } = useParams();
-  const { collapsed } = useContext(settingContext);
+  const { collapsed } = useDashboardUi();
   const [sections, setSections] = useState<HomepageSectionConfiguration[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
   const [draft, setDraft] = useState<Row | null>(null);

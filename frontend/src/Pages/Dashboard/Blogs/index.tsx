@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Archive,
   BookOpenText,
@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { AlertDialog } from "radix-ui";
 import { Link } from "react-router-dom";
-import { settingContext } from "@/StateManagement/ContextAPI/SettingContext/SettingContext";
+import { useDashboardUi } from "@/features/dashboardUi/DashboardUi";
 import supabase from "@/Superbase/client";
 import { dateLabel, slugify } from "./blogUtils";
 import type { Blog, BlogListItem, BlogStatus } from "./types";
@@ -26,7 +26,7 @@ const selectedColumns = "id,title,subtitle,slug,excerpt,cover_image_url,cover_im
 const control = "rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100";
 
 export default function Blogs() {
-  const { collapsed } = useContext(settingContext);
+  const { collapsed } = useDashboardUi();
   const [blogs, setBlogs] = useState<BlogListItem[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | BlogStatus>("all");
