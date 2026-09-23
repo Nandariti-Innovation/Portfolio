@@ -56,9 +56,12 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
       setLoading(false);
       return false;
     }
-    const next = data as SettingsType<HomepageHeadingManifest>;
+    // Compare normalized snapshots. The JSONB record can omit optional defaults
+    // that parseHeadingManifest adds, which must not count as a user edit.
+    const normalized = structuredClone(parsed.manifest);
+    const next = { ...data, setting_object: structuredClone(normalized) } as SettingsType<HomepageHeadingManifest>;
     setSaved(next);
-    setDraft(structuredClone(parsed.manifest));
+    setDraft(normalized);
     setSelected((previous) => previous in parsed.manifest ? previous : parsed.sections[0]?.section_key || "");
     setEditing(false);
     dispatch(upsertSettingData(next));
@@ -136,9 +139,16 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
     if (failure) setError(failure.message);
     else if (!data) setError("Someone changed the headings since you opened this page. Reload to review the latest version.");
     else {
-      const next = data as SettingsType<HomepageHeadingManifest>;
+      const savedManifest = parseHeadingManifest(data.setting_object);
+      if (savedManifest.errors.length) {
+        setError("The saved headings could not be normalized. Reload before making more changes.");
+        setBusy(false);
+        return;
+      }
+      const normalized = structuredClone(savedManifest.manifest);
+      const next = { ...data, setting_object: structuredClone(normalized) } as SettingsType<HomepageHeadingManifest>;
       setSaved(next);
-      setDraft(structuredClone(next.setting_object));
+      setDraft(normalized);
       setEditing(false);
       dispatch(upsertSettingData(next));
       setNotice("Heading changes saved.");
