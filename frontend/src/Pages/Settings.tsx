@@ -68,7 +68,7 @@ export const Settings = () => {
           <div className="min-w-0">
             {panel === "headings" && <HeadingsEditor onUnsavedChange={setUnsaved}/>} 
             {panel === "templates" && <Suspense fallback={<p role="status" className="p-8 text-sm">Loading templates…</p>}><TemplatesPanel/></Suspense>}
-            {panel === "users" && <Suspense fallback={<p role="status" className="p-8 text-sm">Loading users…</p>}>{userProfileId ? <UserProfile/> : <UserManagement embedded/>}</Suspense>}
+            {panel === "users" && <Suspense fallback={<p role="status" className="p-8 text-sm">Loading users…</p>}>{userProfileId ? <UserProfile userId={userProfileId}/> : <UserManagement embedded/>}</Suspense>}
             {panel === "roles" && <Suspense fallback={<p role="status" className="p-8 text-sm">Loading roles…</p>}><UserRoles/></Suspense>}
             {panel === "security" && <Suspense fallback={<p role="status" className="p-8 text-sm">Loading security settings…</p>}><Security embedded/></Suspense>}
           </div>

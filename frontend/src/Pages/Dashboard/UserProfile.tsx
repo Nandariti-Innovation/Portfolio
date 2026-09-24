@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Ban, KeyRound, Laptop, LockKeyhole, ShieldCheck, Trash2 } from "lucide-react";
 import supabase from "@/Superbase/client";
 import { ConfirmActionDialog } from "@/components/ConfirmActionDialog";
 import { functionError, userService, type AuthUserSummary, type DashboardMember, type Factor, type Passkey, type Permission, type Role } from "@/features/dashboardUsers/api";
 
 type Detail = { user: AuthUserSummary; membership: DashboardMember; role: Role; roles: Role[]; permissions: Permission[]; factors: Factor[]; passkeys: Passkey[] };
-export default function UserProfile() {
-  const { userId }=useParams();const navigate=useNavigate();const [detail,setDetail]=useState<Detail|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
+export default function UserProfile({ userId }: { userId: string }) {
+  const navigate=useNavigate();const [detail,setDetail]=useState<Detail|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
   const [action,setAction]=useState<"reset"|"disable"|"delete"|null>(null),[confirmation,setConfirmation]=useState("");
   const [removeMethod,setRemoveMethod]=useState<{type:"factor"|"passkey";id:string;name:string}|null>(null);
   const load=useCallback(async()=>{if(!userId)return;setError("");try{setDetail(await userService<Detail>({action:"get_user",user_id:userId}));}catch(f){setError(await functionError(f));}},[userId]);
