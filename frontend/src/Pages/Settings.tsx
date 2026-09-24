@@ -38,7 +38,7 @@ export const Settings = () => {
   const visiblePanels = panels.filter(item => isAllowed(item.key));
 
   const selectPanel = (next: Panel | null) => {
-    if (panel === next) return;
+    if (panel === next && !(next === "users" && userProfileId)) return;
     if (unsaved && !window.confirm("Discard unsaved heading changes?")) return;
     setUnsaved(false);
     navigate(next ? `/dashboard/settings/${next}` : "/dashboard/settings");
