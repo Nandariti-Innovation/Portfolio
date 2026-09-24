@@ -6,7 +6,7 @@ const publishableKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
 const auth = createClient(url, publishableKey, { auth: { autoRefreshToken: false, persistSession: false } });
-const origins = new Set(["https://deepanshugulia.in", "https://www.deepanshugulia.in", "http://localhost:5173"]);
+const origins = new Set(["https://deepanshugulia.in", "https://www.deepanshugulia.in", "http://localhost:5173", "http://localhost:5174"]);
 const isAllowedOrigin = (origin: string) => origins.has(origin) || /^https:\/\/[a-z0-9-]+-5173\.app\.github\.dev$/i.test(origin);
 
 Deno.serve(async (request) => {
@@ -46,7 +46,7 @@ Deno.serve(async (request) => {
       return respond(400, { error: "Valid email required" });
     // Invites create a blank role through the Auth trigger; assigning a role is a separate action.
     const result = await admin.auth.admin.inviteUserByEmail(email, {
-      redirectTo: "https://deepanshugulia.in/dashboard/auth",
+      redirectTo: `${origin && isAllowedOrigin(origin) ? origin : "https://deepanshugulia.in"}/auth/invite`,
     });
     if (result.error) return respond(400, { error: result.error.message });
     return respond(201, { id: result.data.user.id });

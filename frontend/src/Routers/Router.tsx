@@ -18,6 +18,7 @@ const Sitemap = lazy(() =>
   import("./ProjectRoutes").then((module) => ({ default: module.SitemapRoute })),
 );
 const DashboardRouter = lazy(() => import("./DashboardRouter"));
+const Invite = lazy(() => import("@/Pages/Auth/Invite"));
 
 export const Router = () => {
   const location = useLocation();
@@ -36,6 +37,7 @@ export const Router = () => {
             <Route path="project/:projectID" element={<CaseStudy />} />
             <Route path="sitemap" element={<Sitemap />} />
             <Route path="contact" element={<ContactModalRoute />} />
+            <Route path="auth/invite" element={<Invite />} />
             <Route path="dashboard/*" element={<DashboardRouter />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
