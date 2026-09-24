@@ -63,6 +63,8 @@ Containers provide the main visual controls: surface, padding, row/column/grid a
 
 Every block and container also exposes **Width** and **Height** controls. Available values are Auto, Fit content, Full (100%), 25%, 33%, 50%, 66%, and 75%. Percentage height requires an ancestor with a defined height; otherwise Auto or Fit content is normally the appropriate choice. Puck's draggable wrapper receives the same dimensions, so row and grid layouts look the same in the editor and on the public homepage.
 
+Every block and container also has visual border controls: border style (none, solid, dashed, dotted, or double), thickness, colour, and corner radius. These values are applied consistently in the editor preview and on the published homepage.
+
 These are intentionally curated controls. Users do not edit raw CSS or breakpoints.
 
 ## Static and dynamic values
