@@ -21,12 +21,15 @@ import {
 type SourceMode = "static" | "dynamic";
 type TextStyle = "heading" | "subheading" | "paragraph" | "text";
 type SizeChoice = "auto" | "fit" | "full" | "25" | "33" | "50" | "66" | "75";
+type LinkTextColor = "default" | "light" | "dark" | "accent" | "muted";
+type BorderSide = "top" | "right" | "bottom" | "left";
 type SizingProps = { width?: SizeChoice; height?: SizeChoice };
 type BorderProps = {
   borderStyle?: "none" | "solid" | "dashed" | "dotted" | "double";
   borderWidth?: "1" | "2" | "4";
   borderColor?: "subtle" | "muted" | "light" | "accent" | "dark";
   borderRadius?: "none" | "small" | "medium" | "large" | "full";
+  borderSides?: BorderSide[];
 };
 type DesignProps = SizingProps & BorderProps;
 type TextProps = DesignProps & { contentMode: SourceMode; contentValue: string; contentField: string; size: "small" | "medium" | "large" | "xlarge"; weight: "regular" | "medium" | "bold"; align: "left" | "center" | "right"; tone: "default" | "muted" | "accent" };
@@ -41,8 +44,8 @@ type Blocks = {
   ImageBlock: DesignProps & { srcMode: SourceMode; srcValue: string; srcField: string; altMode: SourceMode; altValue: string; altField: string; shape: "portrait" | "square" | "landscape"; fit: "cover" | "contain"; radius: "none" | "medium" | "large" };
   TagsBlock: DesignProps & { valuesMode: SourceMode; valuesValue: string; valuesField: string; tone: "default" | "accent" };
   DateBlock: DesignProps & { dateMode: SourceMode; dateValue: string; dateField: string; format: "month-year" | "medium" | "iso" };
-  Button: DesignProps & { labelMode: SourceMode; labelValue: string; labelField: string; hrefMode: SourceMode; hrefValue: string; hrefField: string; hrefPrefix: string; variant: "primary" | "secondary" | "outline" | "text"; size: "small" | "medium" | "large"; fullWidth: boolean; newTab: boolean };
-  LinkBlock: DesignProps & { labelMode: SourceMode; labelValue: string; labelField: string; hrefMode: SourceMode; hrefValue: string; hrefField: string; hrefPrefix: string; newTab: boolean };
+  Button: DesignProps & { labelMode: SourceMode; labelValue: string; labelField: string; hrefMode: SourceMode; hrefValue: string; hrefField: string; hrefPrefix: string; variant: "primary" | "secondary" | "outline" | "text"; size: "small" | "medium" | "large"; textColor: LinkTextColor; fullWidth: boolean; newTab: boolean };
+  LinkBlock: DesignProps & { labelMode: SourceMode; labelValue: string; labelField: string; hrefMode: SourceMode; hrefValue: string; hrefField: string; hrefPrefix: string; textColor: LinkTextColor; newTab: boolean };
   Index: DesignProps;
   Divider: DesignProps;
   Spacer: DesignProps & { size: "small" | "medium" | "large" };
@@ -95,11 +98,35 @@ const optionsFor = (fields: SectionDataField[]) => fields.map((field) => ({ labe
 const modeField = (label: string) => ({ type: "select" as const, label: `${label} source`, options: [{ label: "Static", value: "static" }, { label: "Database field", value: "dynamic" }] });
 const selectField = (label: string, fields: SectionDataField[]) => ({ type: "select" as const, label, options: optionsFor(fields) });
 const select = (label: string, values: string[]) => ({ type: "select" as const, label, options: values.map((value) => ({ label: value.replaceAll("-", " "), value })) });
+const textColorField = select("Text colour", ["default", "light", "dark", "accent", "muted"]);
 const sizeOptions = [
   { label: "Auto", value: "auto" }, { label: "Fit content", value: "fit" }, { label: "Full (100%)", value: "full" },
   { label: "25%", value: "25" }, { label: "33%", value: "33" }, { label: "50%", value: "50" },
   { label: "66%", value: "66" }, { label: "75%", value: "75" },
 ];
+const allBorderSides: BorderSide[] = ["top", "right", "bottom", "left"];
+function BorderSidesControl({ value, onChange, readOnly }: { value?: BorderSide[]; onChange: (value: BorderSide[]) => void; readOnly?: boolean }) {
+  const selected = new Set(value || allBorderSides);
+  const allSelected = allBorderSides.every((side) => selected.has(side));
+  const toggle = (side: BorderSide) => {
+    const next = new Set(selected);
+    if (next.has(side)) next.delete(side); else next.add(side);
+    onChange(allBorderSides.filter((item) => next.has(item)));
+  };
+  const buttonStyle = (active: boolean): CSSProperties => ({
+    width: 36, height: 36, border: "1px solid rgba(107, 114, 128, 0.45)", borderRadius: 6,
+    background: active ? "#e8f1ff" : "transparent", color: active ? "#0866cc" : "inherit",
+    display: "grid", placeItems: "center", cursor: readOnly ? "not-allowed" : "pointer",
+  });
+  const sideIcon = (side: BorderSide, active: boolean) => <span aria-hidden="true" style={{ width: 16, height: 16, border: "1px solid rgba(107, 114, 128, 0.35)", [`border${side[0].toUpperCase()}${side.slice(1)}`]: `3px solid ${active ? "#0866cc" : "currentColor"}` }}/>
+  return <div>
+    <div style={{ marginBottom: 8, fontSize: 12, fontWeight: 500 }}>Border sides</div>
+    <div style={{ display: "flex", gap: 6 }}>
+      <button type="button" disabled={readOnly} aria-label="All border sides" aria-pressed={allSelected} title="All sides" style={buttonStyle(allSelected)} onClick={() => onChange(allBorderSides)}><span aria-hidden="true" style={{ width: 16, height: 16, border: `2px solid ${allSelected ? "#0866cc" : "currentColor"}` }}/></button>
+      {allBorderSides.map((side) => <button key={side} type="button" disabled={readOnly} aria-label={`${side} border`} aria-pressed={selected.has(side)} title={side[0].toUpperCase() + side.slice(1)} style={buttonStyle(selected.has(side))} onClick={() => toggle(side)}>{sideIcon(side, selected.has(side))}</button>)}
+    </div>
+  </div>;
+}
 const sizingFields = {
   width: { type: "select" as const, label: "Width", options: sizeOptions },
   height: { type: "select" as const, label: "Height", options: sizeOptions },
@@ -108,20 +135,34 @@ const borderFields = {
   borderStyle: { type: "select" as const, label: "Border style", options: ["none", "solid", "dashed", "dotted", "double"].map((value) => ({ label: value[0].toUpperCase() + value.slice(1), value })) },
   borderWidth: { type: "select" as const, label: "Border thickness", options: [{ label: "Thin (1px)", value: "1" }, { label: "Medium (2px)", value: "2" }, { label: "Thick (4px)", value: "4" }] },
   borderColor: { type: "select" as const, label: "Border colour", options: ["subtle", "muted", "light", "accent", "dark"].map((value) => ({ label: value[0].toUpperCase() + value.slice(1), value })) },
+  borderSides: { type: "custom" as const, render: ({ value, onChange, readOnly }: any) => <BorderSidesControl value={value} onChange={onChange} readOnly={readOnly}/> },
   borderRadius: { type: "select" as const, label: "Corner radius", options: [{ label: "None", value: "none" }, { label: "Small", value: "small" }, { label: "Medium", value: "medium" }, { label: "Large", value: "large" }, { label: "Pill / circle", value: "full" }] },
 };
 const designFields = { ...sizingFields, ...borderFields };
 const withSizingFields = (fields: Record<string, unknown>) => ({ ...fields, ...designFields });
-const sizingDefaults = (width: SizeChoice = "auto"): DesignProps => ({ width, height: "auto", borderStyle: "none", borderWidth: "1", borderColor: "subtle", borderRadius: "none" });
+const sizingDefaults = (width: SizeChoice = "auto"): DesignProps => ({ width, height: "auto", borderStyle: "none", borderWidth: "1", borderColor: "subtle", borderSides: allBorderSides, borderRadius: "none" });
 const sizeValue = (value: unknown): CSSProperties["width"] => ({ fit: "fit-content", full: "100%", "25": "25%", "33": "33.333%", "50": "50%", "66": "66.667%", "75": "75%" }[String(value)] || "auto");
 const borderColors: Record<NonNullable<BorderProps["borderColor"]>, string> = { subtle: "rgba(255, 255, 255, 0.15)", muted: "#6b6965", light: "#f2efe9", accent: "#ff6b24", dark: "#111111" };
 const borderRadii: Record<NonNullable<BorderProps["borderRadius"]>, string> = { none: "0", small: "0.25rem", medium: "0.5rem", large: "1rem", full: "9999px" };
+const linkTextColors: Record<Exclude<LinkTextColor, "default">, string> = { light: "#f2efe9", dark: "#111111", accent: "#ff6b24", muted: "#aaa7a2" };
+const textColorStyle = (value: unknown): CSSProperties | undefined => value && value !== "default" ? { color: linkTextColors[value as Exclude<LinkTextColor, "default">] } : undefined;
 const sizeAttributes = (props: DesignProps) => {
   const style: CSSProperties = { width: sizeValue(props.width), height: sizeValue(props.height), boxSizing: "border-box" };
   if (props.borderStyle && props.borderStyle !== "none") {
-    style.borderStyle = props.borderStyle;
-    style.borderWidth = `${props.borderWidth || "1"}px`;
-    style.borderColor = borderColors[props.borderColor || "subtle"];
+    const sides = props.borderSides || allBorderSides;
+    const width = `${props.borderWidth || "1"}px`;
+    const color = borderColors[props.borderColor || "subtle"];
+    if (allBorderSides.every((side) => sides.includes(side))) {
+      style.borderStyle = props.borderStyle;
+      style.borderWidth = width;
+      style.borderColor = color;
+    } else {
+      style.borderStyle = "none";
+      for (const side of sides) {
+        const name = side[0].toUpperCase() + side.slice(1);
+        Object.assign(style, { [`border${name}Style`]: props.borderStyle, [`border${name}Width`]: width, [`border${name}Color`]: color });
+      }
+    }
   }
   if (props.borderRadius) {
     style.borderRadius = borderRadii[props.borderRadius];
@@ -227,10 +268,10 @@ function TextElement({ kind, props }: { kind: TextStyle; props: TextProps }) {
   return <Sized props={props}><p className={`${className} leading-6`}>{label}</p></Sized>;
 }
 
-function SmartLink({ href, newTab, className, children }: { href: string; newTab: boolean; className: string; children: ReactNode }) {
-  if (!href) return <span className={className}>{children}</span>;
-  if (href.startsWith("/")) return <Link to={href} className={className}>{children}</Link>;
-  return <a href={href} className={className} target={newTab ? "_blank" : undefined} rel="noopener noreferrer">{children}</a>;
+function SmartLink({ href, newTab, className, style, children }: { href: string; newTab: boolean; className: string; style?: CSSProperties; children: ReactNode }) {
+  if (!href) return <span className={className} style={style}>{children}</span>;
+  if (href.startsWith("/")) return <Link to={href} className={className} style={style}>{children}</Link>;
+  return <a href={href} className={className} style={style} target={newTab ? "_blank" : undefined} rel="noopener noreferrer">{children}</a>;
 }
 
 export function createTemplateConfig(
@@ -312,16 +353,16 @@ export function createTemplateConfig(
       render: (props: any) => { const raw = text(useResolved(props.dateMode, props.dateValue, props.dateField)); const date = new Date(raw); const label = !raw || Number.isNaN(date.getTime()) ? "" : props.format === "iso" ? date.toISOString().slice(0, 10) : date.toLocaleDateString("en-US", props.format === "month-year" ? { month: "short", year: "numeric" } : { dateStyle: "medium" }); return <Sized props={props}><time className="font-mono text-xs uppercase text-[#ff6b24]">{label}</time></Sized>; },
     },
     Button: {
-      label: "Button", defaultProps: { labelMode: "static", labelValue: "Button", labelField: "", hrefMode: "static", hrefValue: "/", hrefField: "", hrefPrefix: "", variant: "primary", size: "medium", fullWidth: false, newTab: false, ...sizingDefaults("fit") },
-      fields: withSizingFields({ labelMode: modeField("Label"), labelValue: { type: "text", label: "Label" }, hrefMode: modeField("Destination"), hrefValue: { type: "text", label: "Internal path or HTTPS URL" }, hrefPrefix: { type: "text", label: "Optional path prefix" }, variant: select("Style", ["primary", "secondary", "outline", "text"]), size: select("Size", ["small", "medium", "large"]), newTab: { type: "radio", label: "External link", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } }),
-      resolveFields: (data: any) => withSizingFields({ labelMode: modeField("Label"), ...(data.props.labelMode === "dynamic" ? { labelField: selectField("Label column", textColumns) } : { labelValue: { type: "text", label: "Label" } }), hrefMode: modeField("Destination"), ...(data.props.hrefMode === "dynamic" ? { hrefField: selectField("URL or ID column", urlColumns), hrefPrefix: { type: "text", label: "Optional path prefix, e.g. /project/" } } : { hrefValue: { type: "text", label: "Internal path or HTTPS URL" } }), variant: select("Style", ["primary", "secondary", "outline", "text"]), size: select("Size", ["small", "medium", "large"]), newTab: { type: "radio", label: "External link", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } }),
-      render: (props: any) => { const label = text(useResolved(props.labelMode, props.labelValue, props.labelField)); const href = safeHref(useResolved(props.hrefMode, props.hrefValue, props.hrefField, props.hrefPrefix)); const variant = { primary: "bg-[#ff6b24] text-white", secondary: "bg-white text-black", outline: "border border-white/40 text-white", text: "text-[#ff6b24]" }[props.variant as "primary" | "secondary" | "outline" | "text"]; const size = { small: "px-3 py-2 text-xs", medium: "px-4 py-2.5 text-sm", large: "px-6 py-3 text-base" }[props.size as "small" | "medium" | "large"]; return <Sized props={props}><SmartLink href={href} newTab={props.newTab} className={`inline-flex items-center justify-center gap-2 rounded-lg font-medium !no-underline ${variant} ${size} ${props.fullWidth ? "w-full" : "w-auto"}`}>{label}<ArrowUpRight size={15}/></SmartLink></Sized>; },
+      label: "Button", defaultProps: { labelMode: "static", labelValue: "Button", labelField: "", hrefMode: "static", hrefValue: "/", hrefField: "", hrefPrefix: "", variant: "primary", size: "medium", textColor: "default", fullWidth: false, newTab: false, ...sizingDefaults("fit") },
+      fields: withSizingFields({ labelMode: modeField("Label"), labelValue: { type: "text", label: "Label" }, hrefMode: modeField("Destination"), hrefValue: { type: "text", label: "Internal path or HTTPS URL" }, hrefPrefix: { type: "text", label: "Optional path prefix" }, variant: select("Style", ["primary", "secondary", "outline", "text"]), size: select("Size", ["small", "medium", "large"]), textColor: textColorField, newTab: { type: "radio", label: "External link", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } }),
+      resolveFields: (data: any) => withSizingFields({ labelMode: modeField("Label"), ...(data.props.labelMode === "dynamic" ? { labelField: selectField("Label column", textColumns) } : { labelValue: { type: "text", label: "Label" } }), hrefMode: modeField("Destination"), ...(data.props.hrefMode === "dynamic" ? { hrefField: selectField("URL or ID column", urlColumns), hrefPrefix: { type: "text", label: "Optional path prefix, e.g. /project/" } } : { hrefValue: { type: "text", label: "Internal path or HTTPS URL" } }), variant: select("Style", ["primary", "secondary", "outline", "text"]), size: select("Size", ["small", "medium", "large"]), textColor: textColorField, newTab: { type: "radio", label: "External link", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } }),
+      render: (props: any) => { const label = text(useResolved(props.labelMode, props.labelValue, props.labelField)); const href = safeHref(useResolved(props.hrefMode, props.hrefValue, props.hrefField, props.hrefPrefix)); const variant = { primary: "bg-[#ff6b24] text-white", secondary: "bg-white text-black", outline: "border border-white/40 text-white", text: "text-[#ff6b24]" }[props.variant as "primary" | "secondary" | "outline" | "text"]; const size = { small: "px-3 py-2 text-xs", medium: "px-4 py-2.5 text-sm", large: "px-6 py-3 text-base" }[props.size as "small" | "medium" | "large"]; return <Sized props={props}><SmartLink href={href} newTab={props.newTab} style={textColorStyle(props.textColor)} className={`inline-flex items-center justify-center gap-2 rounded-lg font-medium !no-underline ${variant} ${size} ${props.fullWidth ? "w-full" : "w-auto"}`}>{label}<ArrowUpRight size={15}/></SmartLink></Sized>; },
     },
     LinkBlock: {
-      label: "Link", defaultProps: { labelMode: "static", labelValue: "View details", labelField: "", hrefMode: "static", hrefValue: "/", hrefField: "", hrefPrefix: "", newTab: false, ...sizingDefaults("fit") },
-      fields: withSizingFields({ labelMode: modeField("Label"), labelValue: { type: "text", label: "Label" }, hrefMode: modeField("Destination"), hrefValue: { type: "text", label: "Internal path or HTTPS URL" }, hrefPrefix: { type: "text", label: "Optional path prefix" }, newTab: { type: "radio", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } }),
-      resolveFields: (data: any) => withSizingFields({ labelMode: modeField("Label"), ...(data.props.labelMode === "dynamic" ? { labelField: selectField("Label column", textColumns) } : { labelValue: { type: "text", label: "Label" } }), hrefMode: modeField("Destination"), ...(data.props.hrefMode === "dynamic" ? { hrefField: selectField("URL or ID column", urlColumns), hrefPrefix: { type: "text", label: "Optional path prefix" } } : { hrefValue: { type: "text", label: "Internal path or HTTPS URL" } }), newTab: { type: "radio", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } }),
-      render: (props: any) => { const label = text(useResolved(props.labelMode, props.labelValue, props.labelField)); const href = safeHref(useResolved(props.hrefMode, props.hrefValue, props.hrefField, props.hrefPrefix)); return <Sized props={props}><SmartLink href={href} newTab={props.newTab} className="inline-flex items-center gap-2 font-mono text-xs text-[#ff6b24] !no-underline">{label}<ArrowUpRight size={15}/></SmartLink></Sized>; },
+      label: "Link", defaultProps: { labelMode: "static", labelValue: "View details", labelField: "", hrefMode: "static", hrefValue: "/", hrefField: "", hrefPrefix: "", textColor: "default", newTab: false, ...sizingDefaults("fit") },
+      fields: withSizingFields({ labelMode: modeField("Label"), labelValue: { type: "text", label: "Label" }, hrefMode: modeField("Destination"), hrefValue: { type: "text", label: "Internal path or HTTPS URL" }, hrefPrefix: { type: "text", label: "Optional path prefix" }, textColor: textColorField, newTab: { type: "radio", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } }),
+      resolveFields: (data: any) => withSizingFields({ labelMode: modeField("Label"), ...(data.props.labelMode === "dynamic" ? { labelField: selectField("Label column", textColumns) } : { labelValue: { type: "text", label: "Label" } }), hrefMode: modeField("Destination"), ...(data.props.hrefMode === "dynamic" ? { hrefField: selectField("URL or ID column", urlColumns), hrefPrefix: { type: "text", label: "Optional path prefix" } } : { hrefValue: { type: "text", label: "Internal path or HTTPS URL" } }), textColor: textColorField, newTab: { type: "radio", options: [{ label: "Same tab", value: false }, { label: "New tab", value: true }] } }),
+      render: (props: any) => { const label = text(useResolved(props.labelMode, props.labelValue, props.labelField)); const href = safeHref(useResolved(props.hrefMode, props.hrefValue, props.hrefField, props.hrefPrefix)); return <Sized props={props}><SmartLink href={href} newTab={props.newTab} style={textColorStyle(props.textColor)} className="inline-flex items-center gap-2 font-mono text-xs text-[#ff6b24] !no-underline">{label}<ArrowUpRight size={15}/></SmartLink></Sized>; },
     },
     Index: { label: "Item number", fields: designFields, defaultProps: sizingDefaults("fit"), render: (props: any) => <Sized props={props}><ItemIndex/></Sized> },
     Divider: { label: "Divider", fields: designFields, defaultProps: sizingDefaults("full"), render: (props: any) => <Sized props={props}><hr className="w-full border-white/20"/></Sized> },
@@ -489,7 +530,7 @@ function V2Node({ node, section }: { node: TemplateNode; section: DynamicSection
   if (node.type === "ImageBlock") { const src = imageSource(resolved("src")); const alt = text(resolved("alt")); const legacyRadius = node.props.borderRadius ? "" : classes.radius[String(node.props.radius)]; return <Sized props={node.props}>{src ? <img src={src} alt={alt} loading="lazy" decoding="async" className={`block size-full ${classes.image[String(node.props.shape)]} ${classes.fit[String(node.props.fit)]} ${legacyRadius}`}/> : <div aria-label={alt || undefined} className={`size-full bg-[#302117] ${classes.image[String(node.props.shape)]} ${legacyRadius}`}/>}</Sized>; }
   if (node.type === "TagsBlock") { const raw = resolved("values"); const values = Array.isArray(raw) ? raw.map(String) : text(raw).split(",").map((value) => value.trim()).filter(Boolean); return <Sized props={node.props} className="flex flex-wrap gap-2">{values.slice(0, 12).map((tag) => <span key={tag} className={`border border-white/15 px-2 py-1 font-mono text-xs ${node.props.tone === "accent" ? "text-[#ff6b24]" : ""}`}>{tag}</span>)}</Sized>; }
   if (node.type === "DateBlock") { const raw = text(resolved("date")); const date = new Date(raw); const label = !raw || Number.isNaN(date.getTime()) ? "" : node.props.format === "iso" ? date.toISOString().slice(0, 10) : date.toLocaleDateString("en-US", node.props.format === "month-year" ? { month: "short", year: "numeric" } : { dateStyle: "medium" }); return <Sized props={node.props}><time className="font-mono text-xs uppercase text-[#ff6b24]">{label}</time></Sized>; }
-  if (node.type === "Button" || node.type === "LinkBlock") { const label = text(resolved("label")); const href = safeHref(resolved("href")); const isButton = node.type === "Button"; const variant = { primary: "bg-[#ff6b24] text-white", secondary: "bg-white text-black", outline: "border border-white/40 text-white", text: "text-[#ff6b24]" }[String(node.props.variant)] || "text-[#ff6b24]"; const size = { small: "px-3 py-2 text-xs", medium: "px-4 py-2.5 text-sm", large: "px-6 py-3 text-base" }[String(node.props.size)] || "text-xs"; return <Sized props={node.props}><SmartLink href={href} newTab={Boolean(node.props.newTab)} className={isButton ? `inline-flex items-center justify-center gap-2 rounded-lg font-medium !no-underline ${variant} ${size} ${node.props.fullWidth ? "w-full" : "w-auto"}` : "inline-flex items-center gap-2 font-mono text-xs text-[#ff6b24] !no-underline"}>{label}<ArrowUpRight size={15}/></SmartLink></Sized>; }
+  if (node.type === "Button" || node.type === "LinkBlock") { const label = text(resolved("label")); const href = safeHref(resolved("href")); const isButton = node.type === "Button"; const variant = { primary: "bg-[#ff6b24] text-white", secondary: "bg-white text-black", outline: "border border-white/40 text-white", text: "text-[#ff6b24]" }[String(node.props.variant)] || "text-[#ff6b24]"; const size = { small: "px-3 py-2 text-xs", medium: "px-4 py-2.5 text-sm", large: "px-6 py-3 text-base" }[String(node.props.size)] || "text-xs"; return <Sized props={node.props}><SmartLink href={href} newTab={Boolean(node.props.newTab)} style={textColorStyle(node.props.textColor)} className={isButton ? `inline-flex items-center justify-center gap-2 rounded-lg font-medium !no-underline ${variant} ${size} ${node.props.fullWidth ? "w-full" : "w-auto"}` : "inline-flex items-center gap-2 font-mono text-xs text-[#ff6b24] !no-underline"}>{label}<ArrowUpRight size={15}/></SmartLink></Sized>; }
   if (node.type === "Index") return <Sized props={node.props}><ItemIndex/></Sized>;
   if (node.type === "Divider") return <Sized props={node.props}><hr className="w-full border-white/20"/></Sized>;
   if (node.type === "Spacer") return <Sized props={node.props} className={classes.spacer[String(node.props.size)]}><span aria-hidden="true"/></Sized>;
