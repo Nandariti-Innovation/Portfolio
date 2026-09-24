@@ -23,6 +23,10 @@ type TextStyle = "heading" | "subheading" | "paragraph" | "text";
 type SizeChoice = "auto" | "fit" | "full" | "25" | "33" | "50" | "66" | "75";
 type LinkTextColor = "default" | "light" | "dark" | "accent" | "muted";
 type BorderSide = "top" | "right" | "bottom" | "left";
+type SpaceValue = "0" | "4" | "8" | "12" | "16" | "24" | "32" | "48";
+type SpacingValue = { linked: boolean; top: SpaceValue; right: SpaceValue; bottom: SpaceValue; left: SpaceValue };
+type OffsetValue = "auto" | "-48" | "-32" | "-24" | "-16" | "-12" | "-8" | "-4" | "0" | "4" | "8" | "12" | "16" | "24" | "32" | "48";
+type PositionOffsets = { top: OffsetValue; right: OffsetValue; bottom: OffsetValue; left: OffsetValue };
 type SizingProps = { width?: SizeChoice; height?: SizeChoice };
 type BorderProps = {
   borderStyle?: "none" | "solid" | "dashed" | "dotted" | "double";
@@ -31,8 +35,33 @@ type BorderProps = {
   borderRadius?: "none" | "small" | "medium" | "large" | "full";
   borderSides?: BorderSide[];
 };
-type DesignProps = SizingProps & BorderProps;
-type TextProps = DesignProps & { contentMode: SourceMode; contentValue: string; contentField: string; size: "small" | "medium" | "large" | "xlarge"; weight: "regular" | "medium" | "bold"; align: "left" | "center" | "right"; tone: "default" | "muted" | "accent" };
+type AppearanceProps = {
+  innerSpacing?: SpacingValue;
+  outerSpacing?: SpacingValue;
+  background?: "none" | "surface" | "accent" | "light" | "muted";
+  opacity?: "25" | "50" | "75" | "100";
+  overflow?: "visible" | "hidden" | "auto";
+  aspectRatio?: "auto" | "square" | "portrait" | "4-3" | "16-9";
+  shadow?: "none" | "small" | "medium" | "large" | "glow";
+  rotation?: "0" | "-5" | "5" | "-15" | "15";
+  position?: "static" | "relative" | "absolute" | "fixed" | "sticky";
+  positionOffsets?: PositionOffsets;
+  zIndex?: "auto" | "0" | "10" | "20" | "30" | "40" | "50";
+};
+type DesignProps = SizingProps & BorderProps & AppearanceProps;
+type TextProps = DesignProps & {
+  contentMode: SourceMode; contentValue: string; contentField: string;
+  size: "small" | "medium" | "large" | "xlarge"; weight: "regular" | "medium" | "bold"; align: "left" | "center" | "right"; tone: "default" | "muted" | "accent";
+  fontFamily?: "default" | "manrope" | "playfair" | "dm-mono";
+  fontSize?: "default" | "12" | "14" | "16" | "18" | "20" | "24" | "30" | "36" | "48" | "64";
+  lineHeight?: "normal" | "1" | "1.25" | "1.5" | "1.75" | "2";
+  letterSpacing?: "normal" | "tight" | "wide" | "wider" | "widest";
+  italic?: "normal" | "italic";
+  decoration?: "none" | "underline" | "line-through";
+  transform?: "none" | "uppercase" | "lowercase" | "capitalize";
+  wrapping?: "normal" | "nowrap";
+  paragraphSpacing?: SpaceValue;
+};
 type Blocks = {
   SectionHeading: DesignProps;
   Collection: DesignProps & { item: Slot; preset: CardPreset; sourceSection: string; limit: number; orderBy: string; orderDirection: "asc" | "desc"; layout: "grid" | "stack" | "timeline"; desktopColumns: "1" | "2" | "3" | "4"; gap: "small" | "medium" | "large" };
@@ -41,7 +70,7 @@ type Blocks = {
   Subheading: TextProps;
   Paragraph: TextProps;
   InlineText: TextProps;
-  ImageBlock: DesignProps & { srcMode: SourceMode; srcValue: string; srcField: string; altMode: SourceMode; altValue: string; altField: string; shape: "portrait" | "square" | "landscape"; fit: "cover" | "contain"; radius: "none" | "medium" | "large" };
+  ImageBlock: DesignProps & { srcMode: SourceMode; srcValue: string; srcField: string; altMode: SourceMode; altValue: string; altField: string; shape: "portrait" | "square" | "landscape"; fit: "cover" | "contain"; radius: "none" | "medium" | "large"; imagePosition?: "center" | "top" | "right" | "bottom" | "left"; imageAspect?: "auto" | "square" | "portrait" | "4-3" | "16-9"; imageOpacity?: "25" | "50" | "75" | "100"; brightness?: "50" | "75" | "100" | "125" | "150"; contrast?: "50" | "75" | "100" | "125" | "150"; saturation?: "0" | "50" | "100" | "150" | "200"; grayscale?: "0" | "50" | "100"; overlayColor?: "none" | "dark" | "light" | "accent" | "muted"; overlayOpacity?: "0" | "25" | "50" | "75" };
   TagsBlock: DesignProps & { valuesMode: SourceMode; valuesValue: string; valuesField: string; tone: "default" | "accent" };
   DateBlock: DesignProps & { dateMode: SourceMode; dateValue: string; dateField: string; format: "month-year" | "medium" | "iso" };
   Button: DesignProps & { labelMode: SourceMode; labelValue: string; labelField: string; hrefMode: SourceMode; hrefValue: string; hrefField: string; hrefPrefix: string; variant: "primary" | "secondary" | "outline" | "text"; size: "small" | "medium" | "large"; textColor: LinkTextColor; fullWidth: boolean; newTab: boolean };
@@ -104,7 +133,34 @@ const sizeOptions = [
   { label: "25%", value: "25" }, { label: "33%", value: "33" }, { label: "50%", value: "50" },
   { label: "66%", value: "66" }, { label: "75%", value: "75" },
 ];
+const spacingValues: SpaceValue[] = ["0", "4", "8", "12", "16", "24", "32", "48"];
+const offsetValues: OffsetValue[] = ["auto", "-48", "-32", "-24", "-16", "-12", "-8", "-4", "0", "4", "8", "12", "16", "24", "32", "48"];
 const allBorderSides: BorderSide[] = ["top", "right", "bottom", "left"];
+const zeroSpacing = (): SpacingValue => ({ linked: true, top: "0", right: "0", bottom: "0", left: "0" });
+const autoOffsets = (): PositionOffsets => ({ top: "auto", right: "auto", bottom: "auto", left: "auto" });
+const fieldSelectStyle: CSSProperties = { width: "100%", minHeight: 34, border: "1px solid rgba(107, 114, 128, 0.45)", borderRadius: 6, background: "transparent", color: "inherit", padding: "0 7px" };
+
+function SpacingControl({ label, value, onChange, readOnly }: { label: string; value?: SpacingValue; onChange: (value: SpacingValue) => void; readOnly?: boolean }) {
+  const current = value || zeroSpacing();
+  const setSide = (side: keyof Omit<SpacingValue, "linked">, next: SpaceValue) => onChange(current.linked ? { linked: true, top: next, right: next, bottom: next, left: next } : { ...current, [side]: next });
+  const spacingSelect = (side: keyof Omit<SpacingValue, "linked">) => <select aria-label={`${label} ${side}`} disabled={readOnly} value={current[side]} style={fieldSelectStyle} onChange={(event) => setSide(side, event.target.value as SpaceValue)}>{spacingValues.map((item) => <option key={item} value={item}>{item}px</option>)}</select>;
+  return <div>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+      <span style={{ fontSize: 12, fontWeight: 500 }}>{label}</span>
+      <button type="button" disabled={readOnly} aria-pressed={current.linked} title={current.linked ? "Use individual sides" : "Link all sides"} onClick={() => onChange({ ...current, linked: !current.linked })} style={{ border: "1px solid rgba(107, 114, 128, 0.45)", borderRadius: 6, padding: "4px 8px", background: current.linked ? "#e8f1ff" : "transparent", color: current.linked ? "#0866cc" : "inherit", cursor: readOnly ? "not-allowed" : "pointer" }}>{current.linked ? "Linked" : "Individual"}</button>
+    </div>
+    {current.linked ? spacingSelect("top") : <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>{(["top", "right", "bottom", "left"] as const).map((side) => <label key={side} style={{ display: "grid", gap: 3, fontSize: 10, textTransform: "capitalize" }}>{side}{spacingSelect(side)}</label>)}</div>}
+  </div>;
+}
+
+function PositionOffsetsControl({ value, onChange, readOnly }: { value?: PositionOffsets; onChange: (value: PositionOffsets) => void; readOnly?: boolean }) {
+  const current = value || autoOffsets();
+  return <div>
+    <div style={{ marginBottom: 8, fontSize: 12, fontWeight: 500 }}>Position offsets</div>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>{(["top", "right", "bottom", "left"] as const).map((side) => <label key={side} style={{ display: "grid", gap: 3, fontSize: 10, textTransform: "capitalize" }}>{side}<select disabled={readOnly} value={current[side]} style={fieldSelectStyle} onChange={(event) => onChange({ ...current, [side]: event.target.value as OffsetValue })}>{offsetValues.map((item) => <option key={item} value={item}>{item === "auto" ? "Auto" : `${item}px`}</option>)}</select></label>)}</div>
+  </div>;
+}
+
 function BorderSidesControl({ value, onChange, readOnly }: { value?: BorderSide[]; onChange: (value: BorderSide[]) => void; readOnly?: boolean }) {
   const selected = new Set(value || allBorderSides);
   const allSelected = allBorderSides.every((side) => selected.has(side));
@@ -138,16 +194,59 @@ const borderFields = {
   borderSides: { type: "custom" as const, render: ({ value, onChange, readOnly }: any) => <BorderSidesControl value={value} onChange={onChange} readOnly={readOnly}/> },
   borderRadius: { type: "select" as const, label: "Corner radius", options: [{ label: "None", value: "none" }, { label: "Small", value: "small" }, { label: "Medium", value: "medium" }, { label: "Large", value: "large" }, { label: "Pill / circle", value: "full" }] },
 };
-const designFields = { ...sizingFields, ...borderFields };
+const appearanceFields = {
+  innerSpacing: { type: "custom" as const, render: ({ value, onChange, readOnly }: any) => <SpacingControl label="Inner spacing" value={value} onChange={onChange} readOnly={readOnly}/> },
+  outerSpacing: { type: "custom" as const, render: ({ value, onChange, readOnly }: any) => <SpacingControl label="Outer spacing" value={value} onChange={onChange} readOnly={readOnly}/> },
+  background: select("Background", ["none", "surface", "accent", "light", "muted"]),
+  opacity: select("Opacity", ["25", "50", "75", "100"]),
+  overflow: select("Overflow", ["visible", "hidden", "auto"]),
+  aspectRatio: { type: "select" as const, label: "Aspect ratio", options: [{ label: "Auto", value: "auto" }, { label: "Square (1:1)", value: "square" }, { label: "Portrait (4:5)", value: "portrait" }, { label: "Standard (4:3)", value: "4-3" }, { label: "Widescreen (16:9)", value: "16-9" }] },
+  shadow: select("Shadow", ["none", "small", "medium", "large", "glow"]),
+  rotation: { type: "select" as const, label: "Rotation", options: [{ label: "0°", value: "0" }, { label: "−5°", value: "-5" }, { label: "5°", value: "5" }, { label: "−15°", value: "-15" }, { label: "15°", value: "15" }] },
+  position: select("Position", ["static", "relative", "absolute", "fixed", "sticky"]),
+  positionOffsets: { type: "custom" as const, render: ({ value, onChange, readOnly }: any) => <PositionOffsetsControl value={value} onChange={onChange} readOnly={readOnly}/> },
+  zIndex: { type: "select" as const, label: "Layer order (z-index)", options: ["auto", "0", "10", "20", "30", "40", "50"].map((value) => ({ label: value === "auto" ? "Auto" : value, value })) },
+};
+const designFields = { ...sizingFields, ...appearanceFields, ...borderFields };
 const withSizingFields = (fields: Record<string, unknown>) => ({ ...fields, ...designFields });
-const sizingDefaults = (width: SizeChoice = "auto"): DesignProps => ({ width, height: "auto", borderStyle: "none", borderWidth: "1", borderColor: "subtle", borderSides: allBorderSides, borderRadius: "none" });
+const sizingDefaults = (width: SizeChoice = "auto"): DesignProps => ({
+  width, height: "auto", innerSpacing: zeroSpacing(), outerSpacing: zeroSpacing(), background: "none", opacity: "100", overflow: "visible", aspectRatio: "auto", shadow: "none", rotation: "0",
+  position: "static", positionOffsets: autoOffsets(), zIndex: "auto",
+  borderStyle: "none", borderWidth: "1", borderColor: "subtle", borderSides: allBorderSides, borderRadius: "none",
+});
 const sizeValue = (value: unknown): CSSProperties["width"] => ({ fit: "fit-content", full: "100%", "25": "25%", "33": "33.333%", "50": "50%", "66": "66.667%", "75": "75%" }[String(value)] || "auto");
 const borderColors: Record<NonNullable<BorderProps["borderColor"]>, string> = { subtle: "rgba(255, 255, 255, 0.15)", muted: "#6b6965", light: "#f2efe9", accent: "#ff6b24", dark: "#111111" };
 const borderRadii: Record<NonNullable<BorderProps["borderRadius"]>, string> = { none: "0", small: "0.25rem", medium: "0.5rem", large: "1rem", full: "9999px" };
+const backgroundColors = { surface: "#101010", accent: "rgba(48, 33, 23, 0.9)", light: "#f2efe9", muted: "#302f2d" } as const;
+const aspectRatios = { square: "1 / 1", portrait: "4 / 5", "4-3": "4 / 3", "16-9": "16 / 9" } as const;
+const shadows = { small: "0 2px 8px rgba(0, 0, 0, 0.22)", medium: "0 8px 24px rgba(0, 0, 0, 0.32)", large: "0 18px 48px rgba(0, 0, 0, 0.42)", glow: "0 0 28px rgba(255, 107, 36, 0.45)" } as const;
 const linkTextColors: Record<Exclude<LinkTextColor, "default">, string> = { light: "#f2efe9", dark: "#111111", accent: "#ff6b24", muted: "#aaa7a2" };
 const textColorStyle = (value: unknown): CSSProperties | undefined => value && value !== "default" ? { color: linkTextColors[value as Exclude<LinkTextColor, "default">] } : undefined;
+const spacingStyles = (property: "padding" | "margin", spacing?: SpacingValue): CSSProperties => {
+  if (!spacing) return {};
+  return {
+    [`${property}Top`]: `${spacing.top}px`, [`${property}Right`]: `${spacing.right}px`,
+    [`${property}Bottom`]: `${spacing.bottom}px`, [`${property}Left`]: `${spacing.left}px`,
+  };
+};
+const offsetValue = (value: OffsetValue | undefined) => !value || value === "auto" ? "auto" : `${value}px`;
 const sizeAttributes = (props: DesignProps) => {
-  const style: CSSProperties = { width: sizeValue(props.width), height: sizeValue(props.height), boxSizing: "border-box" };
+  const style: CSSProperties = {
+    width: sizeValue(props.width), height: sizeValue(props.height), boxSizing: "border-box",
+    ...spacingStyles("padding", props.innerSpacing), ...spacingStyles("margin", props.outerSpacing),
+  };
+  if (props.background && props.background !== "none") style.backgroundColor = backgroundColors[props.background];
+  if (props.opacity) style.opacity = Number(props.opacity) / 100;
+  if (props.overflow) style.overflow = props.overflow;
+  if (props.aspectRatio && props.aspectRatio !== "auto") style.aspectRatio = aspectRatios[props.aspectRatio];
+  if (props.shadow && props.shadow !== "none") style.boxShadow = shadows[props.shadow];
+  if (props.rotation && props.rotation !== "0") style.transform = `rotate(${props.rotation}deg)`;
+  if (props.position) style.position = props.position;
+  if (props.positionOffsets) {
+    style.top = offsetValue(props.positionOffsets.top); style.right = offsetValue(props.positionOffsets.right);
+    style.bottom = offsetValue(props.positionOffsets.bottom); style.left = offsetValue(props.positionOffsets.left);
+  }
+  if (props.zIndex && props.zIndex !== "auto") style.zIndex = Number(props.zIndex);
   if (props.borderStyle && props.borderStyle !== "none") {
     const sides = props.borderSides || allBorderSides;
     const width = `${props.borderWidth || "1"}px`;
@@ -166,12 +265,13 @@ const sizeAttributes = (props: DesignProps) => {
   }
   if (props.borderRadius) {
     style.borderRadius = borderRadii[props.borderRadius];
-    if (props.borderRadius !== "none") style.overflow = "hidden";
+    if (props.borderRadius !== "none" && !props.overflow) style.overflow = "hidden";
   }
   return {
     style,
     "data-template-width": props.width || "auto",
     "data-template-height": props.height || "auto",
+    "data-template-position": props.position || "static",
   };
 };
 function Sized({ props, className = "", children }: { props: DesignProps; className?: string; children: ReactNode }) {
@@ -184,6 +284,8 @@ const defaultText = (style: TextStyle, field: string, value: string): TextProps 
   size: style === "heading" ? "large" : style === "subheading" ? "medium" : "small",
   weight: style === "heading" ? "bold" : style === "subheading" ? "medium" : "regular",
   align: "left", tone: style === "subheading" ? "accent" : style === "paragraph" ? "muted" : "default",
+  fontFamily: "default", fontSize: "default", lineHeight: "normal", letterSpacing: "normal", italic: "normal",
+  decoration: "none", transform: "none", wrapping: "normal", paragraphSpacing: "0",
 });
 
 const defaultGroup = (surface: "none" | "card", content: TemplateNode[]) => block("Group", {
@@ -231,6 +333,15 @@ function textFields(props: Partial<TextProps>, fields: SectionDataField[], multi
     weight: select("Weight", ["regular", "medium", "bold"]),
     align: select("Alignment", ["left", "center", "right"]),
     tone: select("Colour", ["default", "muted", "accent"]),
+    fontFamily: { type: "select", label: "Font family", options: [{ label: "Block default", value: "default" }, { label: "Manrope", value: "manrope" }, { label: "Playfair Display", value: "playfair" }, { label: "DM Mono", value: "dm-mono" }] },
+    fontSize: { type: "select", label: "Exact font size", options: ["default", "12", "14", "16", "18", "20", "24", "30", "36", "48", "64"].map((value) => ({ label: value === "default" ? "Responsive default" : `${value}px`, value })) },
+    lineHeight: { type: "select", label: "Line height", options: ["normal", "1", "1.25", "1.5", "1.75", "2"].map((value) => ({ label: value === "normal" ? "Normal" : value, value })) },
+    letterSpacing: select("Letter spacing", ["normal", "tight", "wide", "wider", "widest"]),
+    italic: { type: "radio", label: "Font style", options: [{ label: "Normal", value: "normal" }, { label: "Italic", value: "italic" }] },
+    decoration: { type: "select", label: "Text decoration", options: [{ label: "None", value: "none" }, { label: "Underline", value: "underline" }, { label: "Line through", value: "line-through" }] },
+    transform: select("Text transformation", ["none", "uppercase", "lowercase", "capitalize"]),
+    wrapping: { type: "select", label: "Text wrapping", options: [{ label: "Normal", value: "normal" }, { label: "No wrap", value: "nowrap" }] },
+    paragraphSpacing: { type: "select", label: "Paragraph spacing", options: spacingValues.map((value) => ({ label: `${value}px`, value })) },
   });
 }
 
@@ -258,14 +369,43 @@ function safeHref(value: unknown) {
   catch { return ""; }
 }
 
+function ImageContent({ src, alt, props }: { src: string; alt: string; props: Blocks["ImageBlock"] }) {
+  const selectedAspect = props.imageAspect && props.imageAspect !== "auto" ? aspectRatios[props.imageAspect] : undefined;
+  const legacyAspect = selectedAspect ? "" : classes.image[props.shape];
+  const legacyRadius = props.borderRadius ? "" : classes.radius[props.radius];
+  const overlayColors = { dark: "#000000", light: "#f2efe9", accent: "#ff6b24", muted: "#6b6965" } as const;
+  const imageStyle: CSSProperties = {
+    objectFit: props.fit || "cover", objectPosition: props.imagePosition || "center",
+    opacity: Number(props.imageOpacity || "100") / 100,
+    filter: `brightness(${props.brightness || "100"}%) contrast(${props.contrast || "100"}%) saturate(${props.saturation || "100"}%) grayscale(${props.grayscale || "0"}%)`,
+  };
+  const overlay = props.overlayColor && props.overlayColor !== "none" && props.overlayOpacity !== "0"
+    ? <span aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ backgroundColor: overlayColors[props.overlayColor], opacity: Number(props.overlayOpacity || "0") / 100 }}/>
+    : null;
+  return <div className={`relative size-full ${legacyAspect} ${legacyRadius}`} style={{ aspectRatio: selectedAspect }}>
+    {src ? <img src={src} alt={alt} loading="lazy" decoding="async" className="block size-full" style={imageStyle}/> : <div aria-label={alt || undefined} className="size-full bg-[#302117]"/>}
+    {overlay}
+  </div>;
+}
+
 function TextElement({ kind, props }: { kind: TextStyle; props: TextProps }) {
   const value = useResolved(props.contentMode, props.contentValue, props.contentField);
   const label = Array.isArray(value) ? text(value[0]) : text(value);
   const className = `${kind === "heading" ? "font-serif" : ""} ${classes.textSize[props.size]} ${classes.weight[props.weight]} ${classes.textAlign[props.align]} ${classes.tone[props.tone]}`;
-  if (kind === "heading") return <Sized props={props}><h3 className={className}>{label}</h3></Sized>;
-  if (kind === "subheading") return <Sized props={props}><h4 className={className}>{label}</h4></Sized>;
-  if (kind === "text") return <Sized props={props}><span className={className}>{label}</span></Sized>;
-  return <Sized props={props}><p className={`${className} leading-6`}>{label}</p></Sized>;
+  const fontFamilies = { manrope: '"Manrope", sans-serif', playfair: '"Playfair Display", serif', "dm-mono": '"DM Mono", monospace' } as const;
+  const tracking = { normal: "normal", tight: "-0.025em", wide: "0.05em", wider: "0.1em", widest: "0.2em" } as const;
+  const textStyle: CSSProperties = {
+    fontFamily: props.fontFamily && props.fontFamily !== "default" ? fontFamilies[props.fontFamily] : undefined,
+    fontSize: props.fontSize && props.fontSize !== "default" ? `${props.fontSize}px` : undefined,
+    lineHeight: props.lineHeight === "normal" || !props.lineHeight ? undefined : Number(props.lineHeight),
+    letterSpacing: tracking[props.letterSpacing || "normal"], fontStyle: props.italic || "normal",
+    textDecoration: props.decoration || "none", textTransform: props.transform === "none" || !props.transform ? undefined : props.transform,
+    whiteSpace: props.wrapping || "normal", marginBottom: `${props.paragraphSpacing || "0"}px`,
+  };
+  if (kind === "heading") return <Sized props={props}><h3 className={className} style={textStyle}>{label}</h3></Sized>;
+  if (kind === "subheading") return <Sized props={props}><h4 className={className} style={textStyle}>{label}</h4></Sized>;
+  if (kind === "text") return <Sized props={props}><span className={className} style={textStyle}>{label}</span></Sized>;
+  return <Sized props={props}><p className={`${className} leading-6`} style={textStyle}>{label}</p></Sized>;
 }
 
 function SmartLink({ href, newTab, className, style, children }: { href: string; newTab: boolean; className: string; style?: CSSProperties; children: ReactNode }) {
@@ -322,23 +462,23 @@ export function createTemplateConfig(
     Group: {
       label: "Container",
       fields: withSizingFields({
-        surface: select("Surface", ["none", "card", "accent"]), padding: select("Padding", ["none", "small", "medium", "large"]),
+        surface: select("Surface", ["none", "card", "accent"]),
         arrangement: select("Layout", ["column", "row", "grid"]), gap: select("Gap", ["small", "medium", "large"]),
         justify: select("Horizontal alignment", ["start", "center", "between"]), align: select("Vertical alignment", ["start", "center", "end"]),
         content: { type: "slot", disallow: ["Collection", "SectionHeading"] },
       }),
       defaultProps: { surface: "none", padding: "none", arrangement: "column", gap: "small", justify: "start", align: "start", radius: "none", content: [], ...sizingDefaults("full") },
-      render: (props: any) => { const { content: Content, surface, padding, arrangement, gap, justify, align, radius } = props; return <Sized props={props}><Content minEmptyHeight={40} className={`template-layout-${arrangement} ${classes.surface[surface]} ${classes.padding[padding]} ${classes.arrangement[arrangement]} ${classes.gap[gap]} ${classes.justify[justify]} ${classes.align[align]} ${props.borderRadius ? "" : classes.radius[radius]}`}/></Sized>; },
+      render: (props: any) => { const { content: Content, surface, padding, arrangement, gap, justify, align, radius } = props; return <Sized props={props}><Content minEmptyHeight={40} className={`template-layout-${arrangement} ${classes.surface[surface]} ${props.innerSpacing ? "" : classes.padding[padding]} ${classes.arrangement[arrangement]} ${classes.gap[gap]} ${classes.justify[justify]} ${classes.align[align]} ${props.borderRadius ? "" : classes.radius[radius]}`}/></Sized>; },
     },
     Heading: textComponent("heading", "Heading", false),
     Subheading: textComponent("subheading", "Subheading", false),
     Paragraph: textComponent("paragraph", "Paragraph", true),
     InlineText: textComponent("text", "Text", false),
     ImageBlock: {
-      label: "Image", defaultProps: { srcMode: "static", srcValue: "", srcField: "", altMode: "static", altValue: "", altField: "", shape: "portrait", fit: "cover", radius: "none", ...sizingDefaults("full") },
-      fields: withSizingFields({ srcMode: modeField("Image"), srcValue: { type: "text", label: "Image URL or storage path" }, altMode: modeField("Alternative text"), altValue: { type: "text", label: "Alternative text" }, shape: select("Shape", ["portrait", "square", "landscape"]), fit: select("Fit", ["cover", "contain"]) }),
-      resolveFields: (data: any) => withSizingFields({ srcMode: modeField("Image"), ...(data.props.srcMode === "dynamic" ? { srcField: selectField("Image column", imageColumns) } : { srcValue: { type: "text", label: "Image URL or storage path" } }), altMode: modeField("Alternative text"), ...(data.props.altMode === "dynamic" ? { altField: selectField("Alternative-text column", textColumns) } : { altValue: { type: "text", label: "Alternative text" } }), shape: select("Shape", ["portrait", "square", "landscape"]), fit: select("Fit", ["cover", "contain"]) }),
-      render: (props: any) => { const src = imageSource(useResolved(props.srcMode, props.srcValue, props.srcField)); const alt = text(useResolved(props.altMode, props.altValue, props.altField)); const legacyRadius = props.borderRadius ? "" : classes.radius[props.radius]; return <Sized props={props}>{src ? <img src={src} alt={alt} loading="lazy" decoding="async" className={`block size-full ${classes.image[props.shape]} ${classes.fit[props.fit]} ${legacyRadius}`}/> : <div aria-label={alt || undefined} className={`size-full bg-[#302117] ${classes.image[props.shape]} ${legacyRadius}`}/>}</Sized>; },
+      label: "Image", defaultProps: { srcMode: "static", srcValue: "", srcField: "", altMode: "static", altValue: "", altField: "", shape: "portrait", fit: "cover", radius: "none", imagePosition: "center", imageAspect: "auto", imageOpacity: "100", brightness: "100", contrast: "100", saturation: "100", grayscale: "0", overlayColor: "none", overlayOpacity: "0", ...sizingDefaults("full") },
+      fields: withSizingFields({ srcMode: modeField("Image"), srcValue: { type: "text", label: "Image URL or storage path" }, altMode: modeField("Alternative text"), altValue: { type: "text", label: "Alternative text" }, fit: select("Fit", ["cover", "contain"]), imagePosition: select("Image position", ["center", "top", "right", "bottom", "left"]), imageAspect: { type: "select", label: "Image aspect ratio", options: [{ label: "Auto", value: "auto" }, { label: "Square (1:1)", value: "square" }, { label: "Portrait (4:5)", value: "portrait" }, { label: "Standard (4:3)", value: "4-3" }, { label: "Widescreen (16:9)", value: "16-9" }] }, imageOpacity: select("Image opacity", ["25", "50", "75", "100"]), brightness: select("Brightness", ["50", "75", "100", "125", "150"]), contrast: select("Contrast", ["50", "75", "100", "125", "150"]), saturation: select("Saturation", ["0", "50", "100", "150", "200"]), grayscale: select("Grayscale", ["0", "50", "100"]), overlayColor: select("Overlay colour", ["none", "dark", "light", "accent", "muted"]), overlayOpacity: select("Overlay opacity", ["0", "25", "50", "75"]) }),
+      resolveFields: (data: any) => withSizingFields({ srcMode: modeField("Image"), ...(data.props.srcMode === "dynamic" ? { srcField: selectField("Image column", imageColumns) } : { srcValue: { type: "text", label: "Image URL or storage path" } }), altMode: modeField("Alternative text"), ...(data.props.altMode === "dynamic" ? { altField: selectField("Alternative-text column", textColumns) } : { altValue: { type: "text", label: "Alternative text" } }), fit: select("Fit", ["cover", "contain"]), imagePosition: select("Image position", ["center", "top", "right", "bottom", "left"]), imageAspect: { type: "select", label: "Image aspect ratio", options: [{ label: "Auto", value: "auto" }, { label: "Square (1:1)", value: "square" }, { label: "Portrait (4:5)", value: "portrait" }, { label: "Standard (4:3)", value: "4-3" }, { label: "Widescreen (16:9)", value: "16-9" }] }, imageOpacity: select("Image opacity", ["25", "50", "75", "100"]), brightness: select("Brightness", ["50", "75", "100", "125", "150"]), contrast: select("Contrast", ["50", "75", "100", "125", "150"]), saturation: select("Saturation", ["0", "50", "100", "150", "200"]), grayscale: select("Grayscale", ["0", "50", "100"]), overlayColor: select("Overlay colour", ["none", "dark", "light", "accent", "muted"]), overlayOpacity: select("Overlay opacity", ["0", "25", "50", "75"]) }),
+      render: (props: any) => { const src = imageSource(useResolved(props.srcMode, props.srcValue, props.srcField)); const alt = text(useResolved(props.altMode, props.altValue, props.altField)); return <Sized props={props}><ImageContent src={src} alt={alt} props={props}/></Sized>; },
     },
     TagsBlock: {
       label: "Tags / list", defaultProps: { valuesMode: "static", valuesValue: "React, TypeScript", valuesField: "", tone: "default", ...sizingDefaults("fit") },
@@ -525,9 +665,9 @@ function V2Node({ node, section }: { node: TemplateNode; section: DynamicSection
     const wrapper = node.props.layout === "timeline" ? `grid border-l border-[#ff6b24]/70 pl-5 ${classes.gap[gap]}` : node.props.layout === "stack" ? `grid grid-cols-1 ${classes.gap[gap]}` : `grid grid-cols-1 ${classes.columns[columns]} ${classes.gap[gap]}`;
     return <Sized props={node.props} className={wrapper}>{section.items.map((record, index) => <ItemContext.Provider key={String(record.id ?? record.project_id ?? record.work_id ?? index)} value={{ item: record, index }}><NodeList nodes={(node.props.item as TemplateNode[]) || []} section={section}/></ItemContext.Provider>)}</Sized>;
   }
-  if (node.type === "Group") return <Sized props={node.props} className={`${classes.surface[String(node.props.surface)] || ""} ${classes.padding[String(node.props.padding)] || ""} ${classes.arrangement[String(node.props.arrangement)] || classes.arrangement.column} ${classes.gap[String(node.props.gap)] || classes.gap.small} ${classes.justify[String(node.props.justify)] || ""} ${classes.align[String(node.props.align)] || ""} ${node.props.borderRadius ? "" : classes.radius[String(node.props.radius)] || ""}`}><NodeList nodes={(node.props.content as TemplateNode[]) || []} section={section}/></Sized>;
+  if (node.type === "Group") return <Sized props={node.props} className={`${classes.surface[String(node.props.surface)] || ""} ${node.props.innerSpacing ? "" : classes.padding[String(node.props.padding)] || ""} ${classes.arrangement[String(node.props.arrangement)] || classes.arrangement.column} ${classes.gap[String(node.props.gap)] || classes.gap.small} ${classes.justify[String(node.props.justify)] || ""} ${classes.align[String(node.props.align)] || ""} ${node.props.borderRadius ? "" : classes.radius[String(node.props.radius)] || ""}`}><NodeList nodes={(node.props.content as TemplateNode[]) || []} section={section}/></Sized>;
   if (["Heading", "Subheading", "Paragraph", "InlineText"].includes(node.type)) return <TextElement kind={node.type === "Heading" ? "heading" : node.type === "Subheading" ? "subheading" : node.type === "Paragraph" ? "paragraph" : "text"} props={node.props as unknown as TextProps}/>;
-  if (node.type === "ImageBlock") { const src = imageSource(resolved("src")); const alt = text(resolved("alt")); const legacyRadius = node.props.borderRadius ? "" : classes.radius[String(node.props.radius)]; return <Sized props={node.props}>{src ? <img src={src} alt={alt} loading="lazy" decoding="async" className={`block size-full ${classes.image[String(node.props.shape)]} ${classes.fit[String(node.props.fit)]} ${legacyRadius}`}/> : <div aria-label={alt || undefined} className={`size-full bg-[#302117] ${classes.image[String(node.props.shape)]} ${legacyRadius}`}/>}</Sized>; }
+  if (node.type === "ImageBlock") { const src = imageSource(resolved("src")); const alt = text(resolved("alt")); return <Sized props={node.props}><ImageContent src={src} alt={alt} props={node.props as unknown as Blocks["ImageBlock"]}/></Sized>; }
   if (node.type === "TagsBlock") { const raw = resolved("values"); const values = Array.isArray(raw) ? raw.map(String) : text(raw).split(",").map((value) => value.trim()).filter(Boolean); return <Sized props={node.props} className="flex flex-wrap gap-2">{values.slice(0, 12).map((tag) => <span key={tag} className={`border border-white/15 px-2 py-1 font-mono text-xs ${node.props.tone === "accent" ? "text-[#ff6b24]" : ""}`}>{tag}</span>)}</Sized>; }
   if (node.type === "DateBlock") { const raw = text(resolved("date")); const date = new Date(raw); const label = !raw || Number.isNaN(date.getTime()) ? "" : node.props.format === "iso" ? date.toISOString().slice(0, 10) : date.toLocaleDateString("en-US", node.props.format === "month-year" ? { month: "short", year: "numeric" } : { dateStyle: "medium" }); return <Sized props={node.props}><time className="font-mono text-xs uppercase text-[#ff6b24]">{label}</time></Sized>; }
   if (node.type === "Button" || node.type === "LinkBlock") { const label = text(resolved("label")); const href = safeHref(resolved("href")); const isButton = node.type === "Button"; const variant = { primary: "bg-[#ff6b24] text-white", secondary: "bg-white text-black", outline: "border border-white/40 text-white", text: "text-[#ff6b24]" }[String(node.props.variant)] || "text-[#ff6b24]"; const size = { small: "px-3 py-2 text-xs", medium: "px-4 py-2.5 text-sm", large: "px-6 py-3 text-base" }[String(node.props.size)] || "text-xs"; return <Sized props={node.props}><SmartLink href={href} newTab={Boolean(node.props.newTab)} style={textColorStyle(node.props.textColor)} className={isButton ? `inline-flex items-center justify-center gap-2 rounded-lg font-medium !no-underline ${variant} ${size} ${node.props.fullWidth ? "w-full" : "w-auto"}` : "inline-flex items-center gap-2 font-mono text-xs text-[#ff6b24] !no-underline"}>{label}<ArrowUpRight size={15}/></SmartLink></Sized>; }

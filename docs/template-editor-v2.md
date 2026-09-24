@@ -59,11 +59,33 @@ Each template must contain exactly one Repeating items block. Dynamic bindings a
 - Divider
 - Spacing
 
-Containers provide the main visual controls: surface, padding, row/column/grid arrangement, gap, horizontal alignment, vertical alignment, and corner radius. Text blocks provide size, weight, alignment, and tone. Images provide aspect ratio, fit, and corner radius. Buttons and links provide an explicit text-colour control; buttons also provide style and size, while both support target behavior.
+Containers provide the main visual controls: surface, row/column/grid arrangement, gap, horizontal alignment, vertical alignment, and corner radius. Text blocks provide size, weight, alignment, tone, font family, exact font size, line height, letter spacing, font style, decoration, transformation, wrapping, and paragraph spacing. Images provide positioning, fit, aspect ratio, opacity, filters, overlay colour, and overlay opacity. Buttons and links provide an explicit text-colour control; buttons also provide style and size, while both support target behavior.
 
 Every block and container also exposes **Width** and **Height** controls. Available values are Auto, Fit content, Full (100%), 25%, 33%, 50%, 66%, and 75%. Percentage height requires an ancestor with a defined height; otherwise Auto or Fit content is normally the appropriate choice. Puck's draggable wrapper receives the same dimensions, so row and grid layouts look the same in the editor and on the public homepage.
 
 Every block and container also has visual border controls: border style (none, solid, dashed, dotted, or double), thickness, colour, corner radius, and a Figma-style side picker. The side picker supports any combination of top, right, bottom, and left borders. These values are applied consistently in the editor preview and on the published homepage.
+
+Every block also exposes the following curated design controls:
+
+| Editor control | CSS behavior | Available values |
+| --- | --- | --- |
+| Inner spacing | `padding` | Linked or individual top/right/bottom/left values: 0, 4, 8, 12, 16, 24, 32, 48px |
+| Outer spacing | `margin` | Linked or individual top/right/bottom/left values: 0, 4, 8, 12, 16, 24, 32, 48px |
+| Background | `background-color` | None, surface, accent, light, muted |
+| Opacity | `opacity` | 25%, 50%, 75%, 100% |
+| Overflow | `overflow` | Visible, hidden, auto |
+| Aspect ratio | `aspect-ratio` | Auto, square, portrait, 4:3, 16:9 |
+| Shadow | `box-shadow` | None, small, medium, large, glow |
+| Rotation | `transform: rotate()` | 0°, -5°, 5°, -15°, 15° |
+| Position | `position` | Static, relative, absolute, fixed, sticky |
+| Position offsets | `top`, `right`, `bottom`, `left` | Auto or curated positive/negative pixel offsets |
+| Layer order | `z-index` | Auto, 0, 10, 20, 30, 40, 50 |
+
+Position offsets are ignored by normal CSS flow when Position is Static. Absolute, fixed, and sticky positioning should be used carefully because the block may overlap surrounding content.
+
+Text controls use only the three locally bundled font families: Manrope, Playfair Display, and DM Mono. Exact font sizes are optional; Responsive default preserves the template's existing mobile/desktop type scaling.
+
+Image controls include object position (centre/top/right/bottom/left), fit, five aspect-ratio choices, opacity, brightness, contrast, saturation, grayscale, and a theme-safe overlay with adjustable opacity.
 
 These are intentionally curated controls. Users do not edit raw CSS or breakpoints.
 
