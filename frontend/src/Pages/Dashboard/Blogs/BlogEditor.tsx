@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -14,7 +14,7 @@ import {
   Tag,
 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { settingContext } from "@/StateManagement/ContextAPI/SettingContext/SettingContext";
+import { useDashboardUi } from "@/features/dashboardUi/DashboardUi";
 import supabase from "@/Superbase/client";
 import { contentHtml, getReadingStats, slugify } from "./blogUtils";
 import { RichTextEditor } from "./RichTextEditor";
@@ -25,7 +25,7 @@ type EditableBlog = ReturnType<typeof emptyBlog> & { id?: string; created_at?: s
 const inputClass = "w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 dark:border-gray-600 dark:bg-gray-900 dark:text-white";
 
 export default function BlogEditor() {
-  const { collapsed } = useContext(settingContext);
+  const { collapsed } = useDashboardUi();
   const { blogId } = useParams();
   const navigate = useNavigate();
   const isNew = !blogId;

@@ -1,5 +1,3 @@
-import supabase from '@/Superbase/client';
-
 type Metadata = Record<string, string | number | boolean | null>;
 type LocationData = { ip_address: string | null; country: string | null; country_code: string | null; region: string | null; geo_details: Metadata };
 const emptyLocation: LocationData = { ip_address: null, country: null, country_code: null, region: null, geo_details: { geo_status: 'unavailable' } };
@@ -141,13 +139,26 @@ async function trackEvent(action: 'page_view' | 'resume_view') {
     // Dashboard navigation or login can happen during geolocation. Discard in that case.
     if (!enabled || isDashboardRoute(location.pathname)) return;
     const { geo_details, ...locationColumns } = locationInfo;
-    const { error } = await supabase.from('visitor_logs').insert({ ...record, ...locationColumns, metadata: geo_details });
-    if (error) console.warn('Visitor tracking failed:', error.code); // Never log visitor details.
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const publicKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    const response = await fetch(`${supabaseUrl}/rest/v1/visitor_logs`, {
+      method: 'POST',
+      credentials: 'omit',
+      keepalive: true,
+      headers: {
+        apikey: publicKey,
+        Authorization: `Bearer ${publicKey}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({ ...record, ...locationColumns, metadata: geo_details }),
+    });
+    if (!response.ok) console.warn('Visitor tracking failed:', response.status); // Never log visitor details.
   } catch { /* Analytics must never interrupt the website. */ }
 }
 
-export function setVisitorRoute(path: string, search: string, authenticated: boolean) {
-  const permitted = !authenticated && !isDashboardRoute(path)
+export function setVisitorRoute(path: string, search: string) {
+  const permitted = !isDashboardRoute(path)
     && (!import.meta.env.DEV || import.meta.env.VITE_TRACK_VISITORS_IN_DEV === 'true');
   if (!permitted) { enabled = false; current = null; return; }
   enabled = true;

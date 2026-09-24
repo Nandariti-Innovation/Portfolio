@@ -4,3 +4,6 @@ project_id = "portfolio-contact"
 # Validation, allowed browser origins, and database-backed limits are enforced inside the function.
 [functions.portfolio-contact]
 verify_jwt = false
+
+[functions/dashboard-users]
+verify_jwt = false

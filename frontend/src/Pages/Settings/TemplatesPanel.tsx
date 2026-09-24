@@ -4,6 +4,7 @@ import { ArrowUpRight, BookOpenText, BriefcaseBusiness, LayoutTemplate, Loader2,
 import supabase from "@/Superbase/client";
 import type { DynamicSection, TemplateDefinition } from "@/features/homepageSections/templates";
 import { VisualTemplate } from "@/features/homepageSections/puckTemplates";
+import { TemplateDetailsDialog, type TemplateDetails } from "./TemplateDetailsDialog";
 
 type SectionTemplate = TemplateDefinition & {
   reference_section_key: string | null;
@@ -23,7 +24,8 @@ export const TemplatesPanel = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [refresh, setRefresh] = useState(0);
-  const [editing, setEditing] = useState<SectionTemplate | null | "new">(null);
+  const [detailsTarget, setDetailsTarget] = useState<SectionTemplate | null | "new">(null);
+  const [editing, setEditing] = useState<{ original: SectionTemplate | null; details: TemplateDetails } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,7 +58,7 @@ export const TemplatesPanel = () => {
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div><h2 id="templates-title" className="text-xl font-semibold">Homepage templates</h2>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Compose a layout once, then assign it to any section with compatible fields.</p></div>
-      <div className="flex gap-2"><button type="button" onClick={() => setEditing("new")} className="cursor-pointer rounded-xl bg-primary px-4 py-2 text-sm text-white">New template</button>
+      <div className="flex gap-2"><button type="button" onClick={() => setDetailsTarget("new")} className="cursor-pointer rounded-xl bg-primary px-4 py-2 text-sm text-white">New template</button>
       <button type="button" aria-label="Refresh templates" disabled={loading} onClick={() => { setLoading(true); setRefresh((value) => value + 1); }}
         className="grid size-10 place-items-center rounded-xl border border-gray-300 bg-white text-gray-600 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"><RefreshCw size={17} className={loading ? "animate-spin" : ""}/></button></div>
     </div>
@@ -65,31 +67,51 @@ export const TemplatesPanel = () => {
       : error ? <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">Unable to load templates: {error}</div>
       : templates.length === 0 ? <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center dark:border-gray-700 dark:bg-gray-800"><LayoutTemplate size={28} className="mx-auto text-gray-400"/><p className="mt-3 font-medium">No templates found</p><p className="mt-1 text-sm text-gray-500">The template catalog has no records yet.</p></div>
       : <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
-        {templates.map((template) => <TemplateCard key={template.template_key} template={template} onEdit={() => setEditing(template)}/>)}</div>}
+        {templates.map((template) => <TemplateCard key={template.template_key} template={template} onEdit={() => setDetailsTarget(template)}/>)}</div>}
+    {detailsTarget && <TemplateDetailsDialog
+      open
+      original={detailsTarget === "new" ? null : detailsTarget}
+      onOpenChange={(open) => { if (!open) setDetailsTarget(null); }}
+      onProceed={(details) => {
+        setEditing({ original: detailsTarget === "new" ? null : detailsTarget, details });
+        setDetailsTarget(null);
+      }}
+    />}
     {editing && createPortal(
-      <div className="fixed inset-0 z-[100] overflow-y-auto bg-white dark:bg-gray-800" aria-label="Template layout designer">
-        <div className="mx-auto max-w-[1600px]">
-          <Suspense fallback={<p className="p-8 text-sm">Loading designer…</p>}><TemplateDesigner key={editing === "new" ? "new" : editing.template_key} original={editing === "new" ? null : editing}
-            onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setLoading(true); setRefresh((value) => value + 1); }}/></Suspense>
-        </div>
+      <div className="fixed inset-0 z-[100] overflow-hidden bg-white dark:bg-gray-800" aria-label="Template layout designer">
+        <Suspense fallback={<p className="p-8 text-sm">Loading designer…</p>}><TemplateDesigner key={editing.original?.template_key || "new"} original={editing.original} details={editing.details}
+          onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setLoading(true); setRefresh((value) => value + 1); }}/></Suspense>
       </div>, document.body)}
   </section>;
 };
 
 const TemplateCard = ({ template, onEdit }: { template: SectionTemplate; onEdit: () => void }) => {
   const Icon = templateIcons[template.layout_key as keyof typeof templateIcons] || LayoutTemplate;
+  const v2Dependencies = template.layout_definition.variant === "puck" && "schema_version" in template.layout_definition && template.layout_definition.schema_version === 2
+    ? template.layout_definition.dependencies.fields : [];
+  const previewValue = (field: string, type: string, index: number) => {
+    if (type === "string_array") return ["React", "Design", "Portfolio"];
+    if (type === "integer" || type === "number") return index + 1;
+    if (type === "boolean") return true;
+    if (type === "date" || type === "datetime") return `202${index + 3}-0${index + 1}-01`;
+    if (type === "url") return "/projects";
+    if (type === "image") return "";
+    return `${field.replaceAll("_", " ")} ${index + 1}`;
+  };
   const preview: DynamicSection = {
     section_key: "template_preview", heading: { index: "01", eyebrow: "PREVIEW", title: template.display_name },
     order: 1, template_key: template.template_key,
     field_bindings: Object.fromEntries(template.slots.map(slot => [slot.key, slot.key])),
-    items: ["01", "02", "03"].map(number => ({ title: `Example ${number}`, description: "Preview content for this template", category: "FEATURED", date: "2026-09-22", tags: ["React", "Design"], link: "/projects" })),
+    items: [0, 1, 2].map(index => v2Dependencies.length
+      ? Object.fromEntries(v2Dependencies.map(dependency => [dependency.field, previewValue(dependency.field, dependency.type, index)]))
+      : { title: `Example 0${index + 1}`, description: "Preview content for this template", category: "FEATURED", date: "2026-09-22", tags: ["React", "Design"], link: "/projects" }),
   };
 
   return <article className="min-w-0 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
     <div className="relative overflow-hidden border-b border-gray-700 bg-[#0c0c0c] p-5 text-[#f2efe9]">
       <span className="absolute right-4 top-4 rounded-md border border-white/20 bg-black/50 px-2 py-1 font-mono text-[10px] text-[#ff6b24]">Layout preview</span>
       <div className="mt-6 h-40 overflow-hidden">{template.layout_definition.variant === "puck" ?
-        <div className="w-[250%] origin-top-left scale-[0.4] pointer-events-none"><VisualTemplate section={preview} data={template.layout_definition.puck_data}/></div> :
+        <div className="w-[250%] origin-top-left scale-[0.4] pointer-events-none"><VisualTemplate section={preview} layout={template.layout_definition}/></div> :
         <TemplatePreview layout={template.layout_key}/>}</div>
     </div>
     <div className="space-y-4 p-5">

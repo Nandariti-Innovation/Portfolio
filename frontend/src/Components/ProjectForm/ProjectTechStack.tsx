@@ -1,13 +1,13 @@
 import { tailwindMerge } from "@/Utils/tailwindMerge";
 import { BicepsFlexed, BookAlert, CircleX, Dumbbell, Image, Loader2, Plus, TextCursorInput } from "lucide-react";
 import { Dialog } from "radix-ui";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ProjectFormInput } from "./ProjectFormInput";
 import { ProjectFormSelect } from "./ProjectFormSelect";
 import { IconNameList } from "../Icons/IconsComponents";
 import supabase from "@/Superbase/client";
 import { useDispatch } from "react-redux";
-import { fetchSkills } from "@/StateManagement/Redux/slices/skills";
+import { addSkills } from "@/StateManagement/Redux/slices/skills";
 import { AppDispatch } from "@/StateManagement/Redux/reduxStore";
 
 export const ProjectTechStack: React.FC<ProjectTechStackProps> = ({ skillsList, selectedSkills, updateTechStack }) => {
@@ -19,18 +19,22 @@ export const ProjectTechStack: React.FC<ProjectTechStackProps> = ({ skillsList, 
   const closeRef = useRef<HTMLButtonElement | null>(null);
 
   const toggle = (name: string) => updateTechStack(selected.includes(name) ? selected.filter((item) => item !== name) : [...selected, name]);
+  const refreshSkills = useCallback(async () => {
+    const { data } = await supabase.from("skills").select("*");
+    if (data) dispatch(addSkills(data));
+  }, [dispatch]);
   const saveSkill = async () => {
     if (!newSkill.skill_name.trim() || !newSkill.skill_image) { setError("Add a skill name and choose an icon."); return; }
     setSaving(true); setError("");
     const result = await supabase.from("skills").insert(newSkill);
     setSaving(false);
     if (result.error) { setError(result.error.message); return; }
-    dispatch(fetchSkills());
+    await refreshSkills();
     setNewSkill({ skill_name: "", skill_image: "", skill_level: "beginner" });
     closeRef.current?.click();
   };
 
-  useEffect(() => { dispatch(fetchSkills()); }, [dispatch]);
+  useEffect(() => { void refreshSkills(); }, [refreshSkills]);
 
   return <div className="space-y-2">
     <div className="flex items-center justify-between"><label className="text-sm font-medium text-gray-700 dark:text-gray-200">Tech stack</label><span className="text-xs text-gray-400">{selected.length} selected</span></div>

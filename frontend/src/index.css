@@ -1,5 +1,45 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/manrope-400-600.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DM Mono";
+  src: url("/fonts/dm-mono-400.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 300 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DM Mono";
+  src: url("/fonts/dm-mono-500.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Playfair Display";
+  src: url("/fonts/playfair-display-600.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Playfair Display";
+  src: url("/fonts/playfair-display-600-italic.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
@@ -21,10 +61,8 @@
   --color-leadcolor-400: hsl(27, 99%, 72%);
   --color-leadcolor-600: hsl(23, 98%, 61%);
   --color-lightColorDiscription: hsl(218, 15%, 65%);
-  --color-mentorshipBgColor: hsl(216, 24%, 96%);
   --color-footerBgColor: hsl(0, 0%, 15%);
   --color-glassmorphism: hsl(210 20% 99% / 26%);
-  --color-servicesButton: hsl(214, 33%, 17%);
 }
 
 :root {
@@ -601,6 +639,71 @@ em,
   pointer-events: none;
 }
 
+/* Dashboard form controls
+ * Keep this scoped to the authenticated dashboard so the public portfolio and
+ * intentionally transparent editor fields retain their own visual language.
+ */
+.dark .dashboard-shell :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  select,
+  textarea
+) {
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
+  caret-color: #f3f4f6;
+  color-scheme: dark;
+}
+
+.dark .dashboard-shell :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not(.bg-transparent),
+  select:not(.bg-transparent),
+  textarea:not(.bg-transparent)
+) {
+  background-color: #111827 !important;
+}
+
+.dark .dashboard-shell :is(input, textarea)::placeholder {
+  color: #9ca3af !important;
+  opacity: 1;
+}
+
+.dark .dashboard-shell :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  select,
+  textarea
+):focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 18%);
+}
+
+.dark .dashboard-shell :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  select,
+  textarea
+):disabled {
+  border-color: #4b5563 !important;
+  background-color: #1f2937 !important;
+  color: #cbd5e1 !important;
+  opacity: 0.8 !important;
+}
+
+.dark .dashboard-shell select option {
+  background-color: #111827;
+  color: #f3f4f6;
+}
+
+.dark .dashboard-shell :is(input[type="checkbox"], input[type="radio"]) {
+  accent-color: #3b82f6;
+}
+
+.dark .dashboard-shell input:-webkit-autofill,
+.dark .dashboard-shell input:-webkit-autofill:hover,
+.dark .dashboard-shell input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f3f4f6;
+  box-shadow: 0 0 0 1000px #111827 inset;
+  caret-color: #f3f4f6;
+}
+
 .blog-rich-editor h2,
 .blog-preview-content h2 {
   margin: 2rem 0 0.75rem;
@@ -676,3 +779,19 @@ em,
     width: 100% !important;
   }
 }
+
+/* Keep Puck's draggable wrapper in sync with a block's visual dimensions. */
+[data-puck-component]:has(> [data-template-width="fit"]) { width: fit-content; flex: 0 0 auto; }
+[data-puck-component]:has(> [data-template-width="full"]) { width: 100%; flex: 0 0 100%; }
+[data-puck-component]:has(> [data-template-width="25"]) { width: 25%; flex: 0 0 25%; }
+[data-puck-component]:has(> [data-template-width="33"]) { width: 33.333%; flex: 0 0 33.333%; }
+[data-puck-component]:has(> [data-template-width="50"]) { width: 50%; flex: 0 0 50%; }
+[data-puck-component]:has(> [data-template-width="66"]) { width: 66.667%; flex: 0 0 66.667%; }
+[data-puck-component]:has(> [data-template-width="75"]) { width: 75%; flex: 0 0 75%; }
+[data-puck-component]:has(> [data-template-height="fit"]) { height: fit-content; }
+[data-puck-component]:has(> [data-template-height="full"]) { height: 100%; }
+[data-puck-component]:has(> [data-template-height="25"]) { height: 25%; }
+[data-puck-component]:has(> [data-template-height="33"]) { height: 33.333%; }
+[data-puck-component]:has(> [data-template-height="50"]) { height: 50%; }
+[data-puck-component]:has(> [data-template-height="66"]) { height: 66.667%; }
+[data-puck-component]:has(> [data-template-height="75"]) { height: 75%; }

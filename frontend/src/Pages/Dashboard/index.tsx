@@ -1,6 +1,6 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Activity, Eye, FileText, Loader2, MessageSquare, RefreshCw, Users } from 'lucide-react';
-import { settingContext } from '@/StateManagement/ContextAPI/SettingContext/SettingContext';
+import { useDashboardUi } from '@/features/dashboardUi/DashboardUi';
 import supabase from '@/Superbase/client';
 import { buildDashboardAnalytics, type EnquiryRow, type VisitorRow } from './analytics';
 import { BreakdownCard, DailyChart, DeviceCard, MetricCard, RecentEnquiries } from './OverviewComponents';
@@ -8,7 +8,7 @@ import { BreakdownCard, DailyChart, DeviceCard, MetricCard, RecentEnquiries } fr
 const thirtyDaysAgo = () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
 export default function Dashboard() {
-  const { collapsed } = useContext(settingContext);
+  const { collapsed } = useDashboardUi();
   const [visitors, setVisitors] = useState<VisitorRow[]>([]);
   const [enquiries, setEnquiries] = useState<EnquiryRow[]>([]);
   const [enquiryTotal, setEnquiryTotal] = useState(0);
