@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, Check, Loader2, Pencil, Plus, RotateCcw, Save, X } from "lucide-react";
+import { AlertCircle, Check, Database, Loader2, Pencil, Plus, RotateCcw, Save, X } from "lucide-react";
 import supabase from "@/Superbase/client";
 import type { SettingsType } from "@/StateManagement/Redux/@types";
 import {
@@ -10,10 +10,12 @@ import {
 } from "@/features/homepageSections/manifest";
 import { validBinding, type TemplateDefinition } from "@/features/homepageSections/templates";
 import { NewSectionDialog } from "./NewSectionDialog";
+import { SectionSchemaEditor, type SchemaEditorTemplate } from "./SectionSchemaEditor";
 
 const columns = "setting_id,setting_name,setting_object,schema_version,created_at,updated_at";
 const inputClass = "mt-1.5 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-gray-600 dark:bg-gray-900 dark:disabled:bg-gray-800";
 const isV2Template = (template: TemplateDefinition | undefined) => template?.layout_definition.variant === "puck" && "schema_version" in template.layout_definition && template.layout_definition.schema_version === 2;
+const builtInSections = new Set(["project", "experience", "blog"]);
 
 export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved: boolean) => void }) => {
   const [saved, setSaved] = useState<SettingsType<HomepageHeadingManifest> | null>(null);
@@ -24,19 +26,21 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [creating, setCreating] = useState(false);
+  const [schemaEditing, setSchemaEditing] = useState(false);
   const [editing, setEditing] = useState(false);
   const [newSectionDirty, setNewSectionDirty] = useState(false);
-  const [templates, setTemplates] = useState<TemplateDefinition[]>([]);
+  const [schemaDirty, setSchemaDirty] = useState(false);
+  const [templates, setTemplates] = useState<SchemaEditorTemplate[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     const [{ data, error: failure }, templateResult] = await Promise.all([
       supabase.from("settings").select(columns).eq("setting_name", "headings").single(),
-      supabase.from("section_templates").select("template_key,display_name,description,layout_key,layout_definition,slots,is_builtin,is_published"),
+      supabase.from("section_templates").select("template_key,display_name,description,layout_key,layout_definition,slots,is_builtin,is_published,reference_section_key,display_fields"),
     ]);
     if (templateResult.error) { setError(templateResult.error.message); setLoading(false); return false; }
-    setTemplates((templateResult.data || []) as TemplateDefinition[]);
+    setTemplates((templateResult.data || []) as SchemaEditorTemplate[]);
     if (failure || !data) {
       setError(failure?.message || "The headings setting could not be found.");
       setLoading(false);
@@ -67,7 +71,7 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
 
   useEffect(() => { void load(); }, [load]);
   const changed = !!saved && JSON.stringify(draft) !== JSON.stringify(saved.setting_object);
-  const hasUnsavedWork = changed || newSectionDirty;
+  const hasUnsavedWork = changed || newSectionDirty || schemaDirty;
   useEffect(() => { onUnsavedChange(hasUnsavedWork); return () => onUnsavedChange(false); }, [hasUnsavedWork, onUnsavedChange]);
   useEffect(() => {
     if (!hasUnsavedWork) return;
@@ -185,10 +189,13 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 pb-4 dark:border-gray-700">
                 <div><h3 className="text-lg font-semibold capitalize">{section.section_key.replaceAll("_", " ")}</h3>
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Section key: {section.section_key} · Table: {section.table_name}</p></div>
-                <div className="flex gap-2">{editing ? <>
+                <div className="flex flex-wrap gap-2">{editing ? <>
                   <button type="button" disabled={!saved.setting_object[selected] || JSON.stringify(section) === JSON.stringify(saved.setting_object[selected])} onClick={resetOne} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs disabled:opacity-40 dark:border-gray-600"><RotateCcw size={14}/>Reset section</button>
                   <button type="button" onClick={() => { setDraft(structuredClone(saved.setting_object)); setEditing(false); setError(""); }} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs dark:border-gray-600"><X size={14}/>Cancel edit</button>
-                </> : <button type="button" onClick={() => setEditing(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-white"><Pencil size={14}/>Edit section</button>}</div>
+                </> : <>
+                  {section.table_name === section.section_key && !builtInSections.has(section.section_key) && <button type="button" onClick={() => setSchemaEditing(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs dark:border-gray-600"><Database size={14}/>Manage data fields</button>}
+                  <button type="button" onClick={() => setEditing(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-white"><Pencil size={14}/>Edit section</button>
+                </>}</div>
               </div>
               <div className="mt-5 grid gap-4 sm:grid-cols-[100px_minmax(0,1fr)]">
                 <label className="text-sm font-medium">Index<input disabled={!editing} className={inputClass} maxLength={3} value={section.heading.index} onChange={(event) => editHeading("index", event.target.value)}/><span className="mt-1 block text-right text-xs text-gray-400">{section.heading.index.length}/3</span></label>
@@ -250,5 +257,6 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
       onDirtyChange={setNewSectionDirty} onCreated={async (key) => {
         const loaded = await load();
         if (loaded) { setSelected(key); setNotice(`“${key}” has been created. It remains inactive until a template is assigned.`); }
-      }}/>}</section>;
+      }}/>} {schemaEditing && section && <SectionSchemaEditor open section={section} templates={templates} onOpenChange={setSchemaEditing} onDirtyChange={setSchemaDirty}
+      onUpdated={async () => { const loaded = await load(); if (loaded) setNotice(`The data fields for “${section.section_key}” were updated.`); }}/>}</section>;
 };
