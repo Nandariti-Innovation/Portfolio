@@ -19,6 +19,8 @@ const Sitemap = lazy(() =>
 );
 const DashboardRouter = lazy(() => import("./DashboardRouter"));
 const Invite = lazy(() => import("@/Pages/Auth/Invite"));
+const ForgotPassword = lazy(() => import("@/Pages/Auth/ForgotPassword"));
+const ResetPassword = lazy(() => import("@/Pages/Auth/ResetPassword"));
 
 export const Router = () => {
   const location = useLocation();
@@ -38,6 +40,8 @@ export const Router = () => {
             <Route path="sitemap" element={<Sitemap />} />
             <Route path="contact" element={<ContactModalRoute />} />
             <Route path="auth/invite" element={<Invite />} />
+            <Route path="auth/forgot-password" element={<ForgotPassword />} />
+            <Route path="auth/reset-password" element={<ResetPassword />} />
             <Route path="dashboard/*" element={<DashboardRouter />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

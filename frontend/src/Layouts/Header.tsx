@@ -17,6 +17,8 @@ const sections = [
   { test: (path: string) => /^\/dashboard\/settings\/templates\/?$/.test(path), title: "Section templates", section: "Settings", icon: Settings },
   { test: (path: string) => /^\/dashboard\/settings\/security\/?$/.test(path), title: "My security", section: "Settings", icon: Settings },
   { test: (path: string) => /^\/dashboard\/settings\/users\/?$/.test(path), title: "User management", section: "Settings", icon: Settings },
+  { test: (path: string) => /^\/dashboard\/settings\/users\/[^/]+\/?$/.test(path), title: "User profile", section: "User management", icon: Settings },
+  { test: (path: string) => /^\/dashboard\/settings\/roles\/?$/.test(path), title: "Roles & permissions", section: "Settings", icon: Settings },
   { test: (path: string) => /^\/dashboard\/settings\/?$/.test(path), title: "Settings", section: "Account", icon: Settings },
   { test: (path: string) => /^\/dashboard\/?$/.test(path), title: "Overview", section: "Dashboard", icon: LayoutDashboard },
 ];

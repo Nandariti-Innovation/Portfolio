@@ -1,116 +1,37 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { Fingerprint, KeyRound, Laptop, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import supabase from "@/Superbase/client";
-import { useDashboardAccess } from "@/features/dashboardAccess/DashboardAccess";
+import { ConfirmActionDialog } from "@/components/ConfirmActionDialog";
 
-type Factor = { id: string; friendly_name?: string; status: string };
-type Passkey = { id: string; friendly_name?: string; created_at?: string };
-
-export default function Security({ embedded = false }: { embedded?: boolean }) {
-  const navigate = useNavigate();
-  const { user, role, active, aal, isMfaSatisfied, refresh } = useDashboardAccess();
-  const [factors, setFactors] = useState<Factor[]>([]);
-  const [passkeys, setPasskeys] = useState<Passkey[]>([]);
-  const [enrollment, setEnrollment] = useState<{ id: string; qr: string } | null>(null);
-  const [code, setCode] = useState("");
-  const [verificationFactorId, setVerificationFactorId] = useState<string | null>(null);
-  const [verificationCode, setVerificationCode] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-
-  const load = useCallback(async () => {
-    const [factorResponse, passkeyResponse] = await Promise.all([
-      supabase.auth.mfa.listFactors(), supabase.auth.passkey.list(),
-    ]);
-    if (factorResponse.error) setError(factorResponse.error.message);
-    else setFactors(factorResponse.data.totp.filter(f => f.status === "verified"));
-    if (!passkeyResponse.error) setPasskeys(passkeyResponse.data ?? []);
-  }, []);
-  useEffect(() => { void load(); }, [load]);
-
-  async function startEnrollment() {
-    setBusy(true); setError(""); setNotice("");
-    const { data, error: failure } = await supabase.auth.mfa.enroll({ factorType: "totp" });
-    if (failure) setError(failure.message);
-    else setEnrollment({ id: data.id, qr: data.totp.qr_code });
-    setBusy(false);
-  }
-  async function verifyEnrollment(event: FormEvent) {
-    event.preventDefault(); if (!enrollment) return;
-    setBusy(true); setError("");
-    const result = await supabase.auth.mfa.challengeAndVerify({ factorId: enrollment.id, code });
-    if (result.error) setError(result.error.message);
-    else { setEnrollment(null); setCode(""); setNotice("Authenticator enabled."); await refresh(); await load(); }
-    setBusy(false);
-  }
-  async function verifyExistingFactor(event: FormEvent) {
-    event.preventDefault(); if (!verificationFactorId) return;
-    setBusy(true); setError("");
-    const result = await supabase.auth.mfa.challengeAndVerify({ factorId: verificationFactorId, code: verificationCode });
-    if (result.error) setError(result.error.message);
-    else {
-      setVerificationFactorId(null); setVerificationCode("");
-      await refresh();
-      if (active && role !== "blank") navigate("/dashboard", { replace: true });
-      else setNotice("Authenticator verified.");
-    }
-    setBusy(false);
-  }
-  async function addPasskey() {
-    setBusy(true); setError(""); setNotice("");
-    const result = await supabase.auth.registerPasskey();
-    if (result.error) setError(result.error.message);
-    else { setNotice("Passkey registered."); await load(); }
-    setBusy(false);
-  }
-  async function removePasskey(id: string) {
-    if (!window.confirm("Remove this passkey?")) return;
-    const result = await supabase.auth.passkey.delete({ passkeyId: id });
-    if (result.error) setError(result.error.message);
-    else await load();
-  }
-  async function removeFactor(id: string) {
-    if (!window.confirm("Remove this authenticator? Make sure you have another way to sign in.")) return;
-    const result = await supabase.auth.mfa.unenroll({ factorId: id });
-    if (result.error) setError(result.error.message);
-    else { await supabase.auth.refreshSession(); await refresh(); await load(); }
-  }
-
-  return <div className={embedded ? "text-gray-900 dark:text-white" : "h-full min-w-0 flex-1 overflow-y-auto bg-background p-5 text-gray-900 dark:bg-darkthemebg dark:text-white sm:p-8"}>
-    <div className="mx-auto max-w-3xl space-y-6">
-      <header><h1 className="text-3xl font-bold">My security</h1><p className="mt-2 text-sm text-gray-500">{user?.email} · Session assurance: {aal}</p>
-        <p className="mt-2 text-sm">Role access: {active ? (["superadmin", "admin"].includes(role ?? "") ? "Full dashboard access" : role === "blank" ? "Pending role assignment" : `Assigned role: ${role}`) : "Inactive"}. Session security: {isMfaSatisfied ? "Verified" : "MFA verification required"}.</p>
-      </header>
-      {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-red-700">{error}</p>}
-      {notice && <p role="status" className="rounded-lg bg-green-50 p-3 text-green-700">{notice}</p>}
-      <section className="rounded-2xl border bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
-        <h2 className="text-xl font-semibold">Authenticator app</h2>
-        <p className="mt-2 text-sm text-gray-500">Required to enter and manage the dashboard. Add a second authenticator for recovery.</p>
-        <ul className="my-3 space-y-2">{factors.map(f => <li key={f.id} className="flex justify-between gap-3 text-sm"><span>{f.friendly_name || "Authenticator"}</span>
-          {!isMfaSatisfied && <button type="button" disabled={busy} className="text-primary underline" onClick={() => { setVerificationFactorId(f.id); setVerificationCode(""); }}>Verify session</button>}
-          {factors.length > 1 && aal === "aal2" && <button className="text-red-600 underline" onClick={() => void removeFactor(f.id)}>Remove</button>}</li>)}</ul>
-        {verificationFactorId && !isMfaSatisfied && <form onSubmit={e => void verifyExistingFactor(e)} className="mb-4 space-y-3">
-          <label className="block text-sm">Enter the code from your authenticator app
-            <input required inputMode="numeric" autoComplete="one-time-code" value={verificationCode} onChange={e => setVerificationCode(e.target.value)} className="mt-2 block rounded-lg border p-2 text-gray-900" />
-          </label>
-          <button disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-sm text-white disabled:opacity-50">Verify and enter dashboard</button>
-        </form>}
-        {enrollment ? <form onSubmit={e => void verifyEnrollment(e)} className="space-y-3">
-          <p className="text-sm">Scan this code in your authenticator app, then enter the six-digit code.</p>
-          <img src={enrollment.qr} width={180} height={180} alt="Authenticator setup QR code" />
-          <input required inputMode="numeric" autoComplete="one-time-code" value={code} onChange={e => setCode(e.target.value)}
-            placeholder="Authenticator code" className="rounded-lg border p-2 text-gray-900" />
-          <button disabled={busy} className="ml-2 rounded-lg bg-primary px-4 py-2 text-white">Verify</button>
-        </form> : <button disabled={busy} onClick={() => void startEnrollment()} className="rounded-lg bg-primary px-4 py-2 text-sm text-white disabled:opacity-50">Add authenticator</button>}
-      </section>
-      <section className="rounded-2xl border bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
-        <h2 className="text-xl font-semibold">Passkeys</h2>
-        <p className="mt-2 text-sm text-gray-500">Sign in using a supported device or password manager. Passkey support is experimental.</p>
-        <ul className="my-3 space-y-2">{passkeys.map(p => <li key={p.id} className="flex justify-between gap-3 text-sm"><span>{p.friendly_name || "Passkey"}</span>
-          <button className="text-red-600 underline" onClick={() => void removePasskey(p.id)}>Remove</button></li>)}</ul>
-        <button disabled={busy} onClick={() => void addPasskey()} className="rounded-lg border px-4 py-2 text-sm disabled:opacity-50">Add passkey</button>
-      </section>
-    </div>
-  </div>;
+type Factor={id:string;friendly_name?:string;status:string;created_at?:string};type Passkey={id:string;friendly_name?:string;created_at?:string};
+export default function Security({embedded=false}:{embedded?:boolean}){
+ const navigate=useNavigate();const{user,role,active,aal,isMfaSatisfied,refresh}=useDashboardAccessSafe();
+ const[factors,setFactors]=useState<Factor[]>([]),[passkeys,setPasskeys]=useState<Passkey[]>([]),[enrollment,setEnrollment]=useState<{id:string;qr:string}|null>(null);
+ const[code,setCode]=useState(""),[verifyId,setVerifyId]=useState<string|null>(null),[verifyCode,setVerifyCode]=useState(""),[busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
+ const[remove,setRemove]=useState<{type:"factor"|"passkey";id:string;name:string}|null>(null),[editing,setEditing]=useState<string|null>(null),[friendlyName,setFriendlyName]=useState("");
+ const load=useCallback(async()=>{const[f,p]=await Promise.all([supabase.auth.mfa.listFactors(),supabase.auth.passkey.list()]);if(f.error)setError(f.error.message);else setFactors(f.data.totp.filter(x=>x.status==="verified"));if(p.error)setError(p.error.message);else setPasskeys(p.data??[])},[]);
+ useEffect(()=>{void load()},[load]);
+ async function start(){setBusy(true);setError("");const r=await supabase.auth.mfa.enroll({factorType:"totp",friendlyName:`Authenticator ${factors.length+1}`});if(r.error)setError(r.error.message);else setEnrollment({id:r.data.id,qr:r.data.totp.qr_code});setBusy(false)}
+ async function verifyEnrollment(e:FormEvent){e.preventDefault();if(!enrollment)return;setBusy(true);const r=await supabase.auth.mfa.challengeAndVerify({factorId:enrollment.id,code});if(r.error)setError(r.error.message);else{setEnrollment(null);setCode("");setNotice("Authenticator added.");await refresh();await load()}setBusy(false)}
+ async function verifyExisting(e:FormEvent){e.preventDefault();if(!verifyId)return;setBusy(true);const r=await supabase.auth.mfa.challengeAndVerify({factorId:verifyId,code:verifyCode});if(r.error)setError(r.error.message);else{setVerifyId(null);setVerifyCode("");await refresh();if(active&&role!=="blank")navigate("/dashboard",{replace:true});else setNotice("Session verified.")}setBusy(false)}
+ async function addPasskey(){setBusy(true);setError("");const r=await supabase.auth.registerPasskey();if(r.error)setError(r.error.message);else{setNotice("Passkey registered.");await load()}setBusy(false)}
+ async function removeMethod(){if(!remove)return;setBusy(true);const r=remove.type==="factor"?await supabase.auth.mfa.unenroll({factorId:remove.id}):await supabase.auth.passkey.delete({passkeyId:remove.id});if(r.error)setError(r.error.message);else{setNotice(`${remove.name} removed.`);setRemove(null);await supabase.auth.refreshSession();await refresh();await load()}setBusy(false)}
+ async function renamePasskey(id:string){if(!friendlyName.trim())return;setBusy(true);const r=await supabase.auth.passkey.update({passkeyId:id,friendlyName:friendlyName.trim()});if(r.error)setError(r.error.message);else{setEditing(null);setNotice("Passkey renamed.");await load()}setBusy(false)}
+ const root=embedded?"text-gray-900 dark:text-white":"h-full min-w-0 flex-1 overflow-y-auto bg-background p-5 text-gray-900 dark:bg-darkthemebg dark:text-white sm:p-8";
+ return <div className={root}><div className="mx-auto max-w-5xl space-y-5"><header><h1 className="text-3xl font-bold">My security</h1><p className="mt-1 text-sm text-gray-500">{user?.email} · Manage your password, MFA, passkeys, and active session security.</p></header>
+  {error&&<p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}{notice&&<p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</p>}
+  <section className="grid gap-3 sm:grid-cols-3"><article className="rounded-2xl border bg-white p-4 dark:border-gray-700 dark:bg-gray-800"><ShieldCheck className="text-emerald-500"/><p className="mt-3 text-xs text-gray-500">Session assurance</p><strong>{isMfaSatisfied?"MFA verified":"Verification required"}</strong></article><article className="rounded-2xl border bg-white p-4 dark:border-gray-700 dark:bg-gray-800"><Fingerprint className="text-primary"/><p className="mt-3 text-xs text-gray-500">Authenticator methods</p><strong>{factors.length}</strong></article><article className="rounded-2xl border bg-white p-4 dark:border-gray-700 dark:bg-gray-800"><KeyRound className="text-violet-500"/><p className="mt-3 text-xs text-gray-500">Registered passkeys</p><strong>{passkeys.length}</strong></article></section>
+  <section className="rounded-2xl border bg-white p-5 dark:border-gray-700 dark:bg-gray-800"><div className="flex items-start justify-between gap-3"><div><h2 className="text-xl font-semibold">Password</h2><p className="mt-1 text-sm text-gray-500">Change your password through a secure link sent to your email.</p></div><button onClick={()=>void supabase.auth.resetPasswordForEmail(user?.email||"",{redirectTo:`${window.location.origin}/auth/reset-password`}).then(r=>r.error?setError(r.error.message):setNotice("Password reset email sent."))} className="rounded-lg border px-4 py-2 text-sm">Send reset email</button></div></section>
+  <section className="rounded-2xl border bg-white p-5 dark:border-gray-700 dark:bg-gray-800"><div className="flex items-start justify-between gap-3"><div><h2 className="text-xl font-semibold">Authenticator apps</h2><p className="mt-1 text-sm text-gray-500">Use time-based codes as a second sign-in factor.</p></div><button disabled={busy} onClick={()=>void start()} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-white"><Plus size={15}/>Add authenticator</button></div>
+   <div className="mt-4 space-y-3">{factors.map(f=><div key={f.id} className="flex items-center justify-between rounded-xl border p-4 dark:border-gray-700"><div className="flex gap-3"><ShieldCheck className="text-emerald-500"/><div><p className="font-medium">{f.friendly_name||"Authenticator app"}</p><p className="text-xs text-gray-500">Verified{f.created_at?` · added ${new Date(f.created_at).toLocaleDateString()}`:""}</p></div></div><div className="flex gap-2">{!isMfaSatisfied&&<button onClick={()=>setVerifyId(f.id)} className="text-sm text-primary">Verify session</button>}<button disabled={busy||factors.length===1} title={factors.length===1?"Add another method before removing this one":""} onClick={()=>setRemove({type:"factor",id:f.id,name:f.friendly_name||"Authenticator"})} className="grid size-9 place-items-center rounded-lg border border-red-200 text-red-600 disabled:opacity-30"><Trash2 size={15}/></button></div></div>)}</div>
+   {verifyId&&!isMfaSatisfied&&<form onSubmit={e=>void verifyExisting(e)} className="mt-4 flex flex-wrap gap-2 rounded-xl bg-gray-50 p-4 dark:bg-gray-900"><input required inputMode="numeric" autoComplete="one-time-code" value={verifyCode} onChange={e=>setVerifyCode(e.target.value)} placeholder="Six-digit code" className="rounded-lg border px-3 py-2"/><button disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-sm text-white">Verify</button></form>}
+   {enrollment&&<form onSubmit={e=>void verifyEnrollment(e)} className="mt-4 grid gap-3 rounded-xl border p-4 dark:border-gray-700"><p className="text-sm">Scan the QR code, then enter the six-digit code.</p><img src={enrollment.qr} width={180} height={180} alt="Authenticator setup QR code"/><div><input required inputMode="numeric" value={code} onChange={e=>setCode(e.target.value)} placeholder="Authenticator code" className="rounded-lg border px-3 py-2"/><button disabled={busy} className="ml-2 rounded-lg bg-primary px-4 py-2 text-white">Verify</button></div></form>}
+  </section>
+  <section className="rounded-2xl border bg-white p-5 dark:border-gray-700 dark:bg-gray-800"><div className="flex items-start justify-between gap-3"><div><h2 className="text-xl font-semibold">Passkeys</h2><p className="mt-1 text-sm text-gray-500">Sign in with your device or password manager. Rename or remove saved passkeys here.</p></div><button disabled={busy} onClick={()=>void addPasskey()} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-white"><Plus size={15}/>Add passkey</button></div><div className="mt-4 space-y-3">{passkeys.map(p=><div key={p.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4 dark:border-gray-700"><div className="flex gap-3"><KeyRound className="text-primary"/><div>{editing===p.id?<input autoFocus value={friendlyName} maxLength={120} onChange={e=>setFriendlyName(e.target.value)} className="rounded-lg border px-2 py-1"/>:<p className="font-medium">{p.friendly_name||"Passkey"}</p>}<p className="text-xs text-gray-500">{p.created_at?`Added ${new Date(p.created_at).toLocaleDateString()}`:"Saved sign-in method"}</p></div></div><div className="flex gap-2">{editing===p.id?<><button onClick={()=>void renamePasskey(p.id)} className="text-sm text-primary">Save</button><button onClick={()=>setEditing(null)} className="text-sm text-gray-500">Cancel</button></>:<button onClick={()=>{setEditing(p.id);setFriendlyName(p.friendly_name||"Passkey")}} className="grid size-9 place-items-center rounded-lg border"><Pencil size={14}/></button>}<button onClick={()=>setRemove({type:"passkey",id:p.id,name:p.friendly_name||"Passkey"})} className="grid size-9 place-items-center rounded-lg border border-red-200 text-red-600"><Trash2 size={15}/></button></div></div>)}</div></section>
+  <section className="rounded-2xl border bg-white p-5 dark:border-gray-700 dark:bg-gray-800"><div className="flex gap-3"><Laptop className="text-primary"/><div><h2 className="font-semibold">Current session</h2><p className="mt-1 text-sm text-gray-500">Assurance level: {aal}. Signing out ends this browser session.</p></div></div></section>
+  <ConfirmActionDialog open={Boolean(remove)} onOpenChange={o=>!o&&setRemove(null)} title={`Remove ${remove?.name||"security method"}?`} description={remove?.type==="factor"?"Removing a verified MFA method signs out active sessions. Make sure another method is available.":"This passkey will no longer be available for sign-in."} action="Remove method" danger busy={busy} onConfirm={()=>void removeMethod()}/>
+ </div></div>
 }
+
+import { useDashboardAccess as useDashboardAccessSafe } from "@/features/dashboardAccess/DashboardAccess";

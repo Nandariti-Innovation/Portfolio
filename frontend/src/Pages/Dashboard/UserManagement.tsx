@@ -1,141 +1,48 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from "@supabase/supabase-js";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Ban, Clock3, KeyRound, LockKeyhole, MoreHorizontal, Search, Trash2, UserCheck, UserPlus, Users } from "lucide-react";
 import supabase from "@/Superbase/client";
-import { useDashboardAccess } from "@/features/dashboardAccess/DashboardAccess";
+import { ConfirmActionDialog } from "@/components/ConfirmActionDialog";
+import { InviteUserDialog } from "./UserManagement/InviteUserDialog";
+import { functionError, userService, type AuthUserSummary, type DashboardMember, type Role } from "@/features/dashboardUsers/api";
 
-type Member = { user_id: string; role_key: string; display_name: string; is_active: boolean };
-type Role = { role_key: string; display_name: string; description: string; is_system: boolean };
-type Permission = { permission_key: string; display_name: string };
-type Assignment = { role_key: string; permission_key: string };
-type AuthUser = { id: string; email?: string; invited_at?: string };
-
-async function failureMessage(failure: unknown) {
-  if (failure instanceof FunctionsHttpError) {
-    const body = await failure.context.json().catch(() => null) as { error?: string } | null;
-    return body?.error || `User service returned ${failure.context.status}.`;
-  }
-  if (failure instanceof FunctionsRelayError) return `User service relay error: ${failure.message}`;
-  if (failure instanceof FunctionsFetchError) return "User service is unavailable. Confirm that the dashboard-users Edge Function is deployed.";
-  if (failure && typeof failure === "object" && "message" in failure && typeof failure.message === "string") return failure.message;
-  return failure instanceof Error ? failure.message : "Unable to complete the request.";
-}
+type UserRow = DashboardMember & AuthUserSummary;
+const date = (value?: string) => value ? new Date(value).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "—";
 
 export default function UserManagement({ embedded = false }: { embedded?: boolean }) {
-  const { refresh } = useDashboardAccess();
-  const [members, setMembers] = useState<Member[]>([]);
-  const [authUsers, setAuthUsers] = useState<AuthUser[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [email, setEmail] = useState("");
-  const [roleKey, setRoleKey] = useState("");
-  const [roleName, setRoleName] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-
+  const navigate = useNavigate();
+  const [members, setMembers] = useState<DashboardMember[]>([]), [authUsers, setAuthUsers] = useState<AuthUserSummary[]>([]), [roles, setRoles] = useState<Role[]>([]);
+  const [search, setSearch] = useState(""), [roleFilter, setRoleFilter] = useState("all"), [statusFilter, setStatusFilter] = useState("all");
+  const [menu, setMenu] = useState<string | null>(null), [inviteOpen, setInviteOpen] = useState(false);
+  const [action, setAction] = useState<{ type: "reset" | "disable" | "delete"; user: UserRow } | null>(null);
+  const [confirmation, setConfirmation] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState(""), [notice, setNotice] = useState("");
   const load = useCallback(async () => {
-    const [memberResponse, roleResponse, permissionResponse, assignmentResponse, userResponse] = await Promise.all([
-      supabase.from("dashboard_users").select("user_id,role_key,display_name,is_active").order("created_at"),
-      supabase.from("dashboard_roles").select("role_key,display_name,description,is_system").order("created_at"),
-      supabase.from("dashboard_permissions").select("permission_key,display_name").order("permission_key"),
-      supabase.from("dashboard_role_permissions").select("role_key,permission_key"),
-      supabase.functions.invoke("dashboard-users", { method: "GET" }),
-    ]);
-    const failure = memberResponse.error || roleResponse.error || permissionResponse.error || assignmentResponse.error;
-    if (failure) { setError(failure.message); return; }
-    setMembers(memberResponse.data ?? []); setRoles(roleResponse.data ?? []);
-    setPermissions(permissionResponse.data ?? []); setAssignments(assignmentResponse.data ?? []);
-    if (userResponse.error) {
-      setAuthUsers([]);
-      setError(await failureMessage(userResponse.error));
-    } else {
-      setAuthUsers(userResponse.data?.users ?? []);
-      setError("");
-    }
+    setError("");
+    const [m, r] = await Promise.all([supabase.from("dashboard_users").select("user_id,role_key,display_name,is_active,created_at,updated_at").order("created_at"), supabase.from("dashboard_roles").select("role_key,display_name,description,is_system").order("created_at")]);
+    if (m.error || r.error) { setError((m.error || r.error)?.message || "Unable to load users."); return; }
+    setMembers(m.data ?? []); setRoles(r.data ?? []);
+    try { setAuthUsers((await userService<{ users: AuthUserSummary[] }>({ action: "list_users" }))?.users ?? []); } catch (failure) { setAuthUsers([]); setError(await functionError(failure)); }
   }, []);
   useEffect(() => { void load(); }, [load]);
-
-  async function run(action: () => PromiseLike<{ error?: { message: string } | null }>, success: string) {
-    setBusy(true); setError(""); setNotice("");
-    try {
-      const result = await action();
-      if (result.error) throw result.error;
-      setNotice(success); await load(); await refresh();
-    } catch (failure) { setError(await failureMessage(failure)); }
-    finally { setBusy(false); }
-  }
-
-  async function invite(event: FormEvent) {
-    event.preventDefault();
-    await run(() => supabase.functions.invoke("dashboard-users", { body: { email } }), "Invitation sent. New user starts with the blank role.");
-    setEmail("");
-  }
-  async function createRole(event: FormEvent) {
-    event.preventDefault();
-    await run(() => supabase.from("dashboard_roles").insert({ role_key: roleKey, display_name: roleName }), "Role created.");
-    setRoleKey(""); setRoleName("");
-  }
-  async function togglePermission(role: Role, permission: string, checked: boolean) {
-    await run(() => checked
-      ? supabase.from("dashboard_role_permissions").insert({ role_key: role.role_key, permission_key: permission })
-      : supabase.from("dashboard_role_permissions").delete().eq("role_key", role.role_key).eq("permission_key", permission),
-    "Permissions updated.");
-  }
-
-  return <div className={embedded ? "text-gray-900 dark:text-white" : "h-full min-w-0 flex-1 overflow-y-auto bg-background p-5 text-gray-900 dark:bg-darkthemebg dark:text-white sm:p-8"}>
-    <div className="mx-auto max-w-6xl space-y-6">
-      <header><h1 className="text-3xl font-bold">User management</h1><p className="mt-1 text-sm text-gray-500">Invite users, assign roles, and choose which dashboard pages they can access.</p></header>
-      {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-red-700">{error}</p>}
-      {notice && <p role="status" className="rounded-lg bg-green-50 p-3 text-green-700">{notice}</p>}
-      <form onSubmit={e => void invite(e)} className="flex flex-wrap items-end gap-3 rounded-2xl border bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
-        <label className="flex-1 text-sm font-medium">Invite by email
-          <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="colleague@example.com"
-            className="mt-2 w-full rounded-lg border p-2 text-gray-900" /></label>
-        <button disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-sm text-white disabled:opacity-50">Send invite</button>
-      </form>
-      <section className="overflow-x-auto rounded-2xl border bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
-        <h2 className="mb-4 text-xl font-semibold">Dashboard users</h2>
-        <table className="w-full min-w-[660px] text-left text-sm"><thead><tr><th className="p-2">User</th><th className="p-2">Display name</th><th className="p-2">Role</th><th className="p-2">Active</th><th className="p-2">Actions</th></tr></thead>
-          <tbody>{members.map(member => <tr key={member.user_id} className="border-t dark:border-gray-700">
-            <td className="p-2">{authUsers.find(u => u.id === member.user_id)?.email ?? member.user_id}</td>
-            <td className="p-2"><input aria-label="Display name" defaultValue={member.display_name} key={`${member.user_id}:${member.display_name}`}
-              disabled={busy || member.role_key === "superadmin"} onBlur={e => { if (e.target.value !== member.display_name) void run(() => supabase.from("dashboard_users").update({ display_name: e.target.value }).eq("user_id", member.user_id), "Name saved."); }}
-              className="w-36 rounded border px-2 py-1 text-gray-900 disabled:opacity-60" /></td>
-            <td className="p-2"><select aria-label="User role" value={member.role_key} disabled={busy || member.role_key === "superadmin"}
-              onChange={e => void run(() => supabase.from("dashboard_users").update({ role_key: e.target.value }).eq("user_id", member.user_id), "Role updated.")}
-              className="rounded border px-2 py-1 text-gray-900 disabled:opacity-60">
-              {roles.filter(r => r.role_key !== "superadmin" || member.role_key === "superadmin").map(r => <option key={r.role_key} value={r.role_key}>{r.display_name}</option>)}
-            </select></td>
-            <td className="p-2"><input aria-label="User active" type="checkbox" checked={member.is_active} disabled={busy || member.role_key === "superadmin"}
-              onChange={e => void run(() => supabase.from("dashboard_users").update({ is_active: e.target.checked }).eq("user_id", member.user_id), "User updated.")} /></td>
-            <td className="p-2">{member.role_key === "superadmin" ? <span>Protected</span> : <button disabled={busy} className="text-red-600 underline" onClick={() => {
-              if (window.confirm("Permanently delete this Auth user?")) void run(() => supabase.functions.invoke("dashboard-users", { method: "DELETE", body: { user_id: member.user_id } }), "User deleted.");
-            }}>Delete</button>}</td>
-          </tr>)}</tbody>
-        </table>
-      </section>
-      <section className="space-y-4 rounded-2xl border bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
-        <h2 className="text-xl font-semibold">Roles and dashboard sections</h2>
-        <form onSubmit={e => void createRole(e)} className="flex flex-wrap gap-2">
-          <input required pattern="[a-z][a-z0-9_]{0,39}" placeholder="Role key (e.g. blog_editor)" value={roleKey} onChange={e => setRoleKey(e.target.value)} className="rounded border p-2 text-gray-900" />
-          <input required placeholder="Display name" value={roleName} onChange={e => setRoleName(e.target.value)} className="rounded border p-2 text-gray-900" />
-          <button disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-sm text-white">Create role</button>
-        </form>
-        {roles.map(role => <article key={role.role_key} className="rounded-xl border p-4 dark:border-gray-700">
-          <div className="flex justify-between gap-3"><div><h3 className="font-semibold">{role.display_name}</h3><p className="text-xs text-gray-500">{role.role_key}{role.is_system ? " · built-in" : ""}</p></div>
-            {!role.is_system && <button className="text-sm text-red-600 underline" disabled={busy} onClick={() => {
-              if (window.confirm("Delete this role? Assign its users another role first.")) void run(() => supabase.from("dashboard_roles").delete().eq("role_key", role.role_key), "Role deleted.");
-            }}>Delete role</button>}</div>
-          {role.role_key === "blank" ? <p className="mt-2 text-sm text-gray-500">No access until another role is assigned.</p> : role.is_system ?
-            <p className="mt-2 text-sm text-gray-500">Full access. This built-in role cannot be edited.</p> :
-            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{permissions.filter(p => p.permission_key !== "users.manage").map(p => <label key={p.permission_key} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" disabled={busy} checked={assignments.some(a => a.role_key === role.role_key && a.permission_key === p.permission_key)}
-                onChange={e => void togglePermission(role, p.permission_key, e.target.checked)} />
-              <span>{p.display_name} <small className="text-gray-500">({p.permission_key})</small></span>
-            </label>)}</div>}
-        </article>)}
-      </section>
-    </div>
-  </div>;
+  const rows = useMemo<UserRow[]>(() => members.map(member => ({ ...member, ...(authUsers.find(user => user.id === member.user_id) || { id: member.user_id }) })), [members, authUsers]);
+  const state = (user: UserRow) => !user.is_active ? "disabled" : !user.confirmed_at ? "invited" : user.role_key === "blank" ? "pending" : "active";
+  const filtered = rows.filter(user => `${user.display_name} ${user.email || ""}`.toLowerCase().includes(search.toLowerCase()) && (roleFilter === "all" || user.role_key === roleFilter) && (statusFilter === "all" || state(user) === statusFilter));
+  const counts = [rows.length, rows.filter(u => state(u) === "active").length, rows.filter(u => state(u) === "invited").length, rows.filter(u => state(u) === "disabled").length];
+  async function run(operation: () => Promise<unknown>, success: string) { setBusy(true); setError(""); setNotice(""); try { await operation(); setNotice(success); setAction(null); setConfirmation(""); setMenu(null); await load(); } catch (failure) { setError(await functionError(failure)); } finally { setBusy(false); } }
+  async function invite(email: string, role: string) { await run(() => userService({ action: "invite", email, role_key: role }), "Invitation sent successfully."); setInviteOpen(false); }
+  const selected = action?.user.display_name || action?.user.email || "this user";
+  const root = embedded ? "text-gray-900 dark:text-white" : "h-full min-w-0 flex-1 overflow-y-auto bg-background p-5 text-gray-900 dark:bg-darkthemebg dark:text-white sm:p-8";
+  const summaries = [["Total users", counts[0], Users, "text-blue-600"],["Active users", counts[1], UserCheck, "text-emerald-600"],["Invitations pending", counts[2], Clock3, "text-amber-600"],["Access disabled", counts[3], Ban, "text-red-600"]] as const;
+  return <div className={root}><div className="mx-auto max-w-7xl space-y-5">
+    <header className="flex flex-wrap items-start justify-between gap-4"><div><h1 className="text-3xl font-bold">User management</h1><p className="mt-1 text-sm text-gray-500">Invite users, assign roles, and manage dashboard access.</p></div><button onClick={() => setInviteOpen(true)} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white"><UserPlus size={17}/>Invite user</button></header>
+    {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">{error}</p>}{notice && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">{notice}</p>}
+    <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{summaries.map(([label,value,Icon,color]) => <article key={label} className="flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"><span className={`grid size-11 place-items-center rounded-xl bg-gray-100 dark:bg-gray-900 ${color}`}><Icon size={21}/></span><div><p className="text-xs text-gray-500">{label}</p><strong className="text-2xl">{value}</strong></div></article>)}</section>
+    <section className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-800"><div className="flex flex-wrap items-end justify-between gap-4"><div><h2 className="text-xl font-semibold">People</h2><p className="mt-1 text-sm text-gray-500">Manage dashboard users and access levels.</p></div><div className="flex flex-1 flex-wrap justify-end gap-2"><label className="relative min-w-52 flex-1 lg:max-w-sm"><Search size={16} className="absolute left-3 top-3 text-gray-400"/><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or email…" className="w-full rounded-xl border py-2.5 pl-9 pr-3 text-sm dark:border-gray-600 dark:bg-gray-900"/></label><select aria-label="Role filter" value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="rounded-xl border px-3 text-sm dark:border-gray-600 dark:bg-gray-900"><option value="all">All roles</option>{roles.map(r => <option key={r.role_key} value={r.role_key}>{r.display_name}</option>)}</select><select aria-label="Status filter" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="rounded-xl border px-3 text-sm dark:border-gray-600 dark:bg-gray-900"><option value="all">All statuses</option><option value="active">Active</option><option value="invited">Invited</option><option value="pending">Pending role</option><option value="disabled">Disabled</option></select></div></div>
+      <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="border-b text-xs text-gray-500 dark:border-gray-700"><tr><th className="p-3">User</th><th>Role</th><th>Status</th><th>Last sign-in</th><th className="text-right">Actions</th></tr></thead><tbody>{filtered.map(user => { const status = state(user); const initials = (user.display_name || user.email || "U").split(/[\s@]/).filter(Boolean).slice(0,2).map(x => x[0]).join("").toUpperCase(); const protectedUser = user.role_key === "superadmin"; return <tr key={user.user_id} className="border-b last:border-0 dark:border-gray-700"><td className="p-3"><div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-full bg-gradient-to-br from-primary to-violet-500 text-xs font-bold text-white">{initials}</span><div><p className="flex items-center gap-2 font-medium">{user.display_name || "Name not set"}{protectedUser && <LockKeyhole size={13}/>}</p><p className="text-xs text-gray-500">{user.email || "Email unavailable"}</p></div></div></td><td><span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">{roles.find(r => r.role_key === user.role_key)?.display_name || user.role_key}</span></td><td><span className={`rounded-full px-2.5 py-1 text-xs capitalize ${status === "active" ? "bg-emerald-50 text-emerald-700" : status === "disabled" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>{status === "pending" ? "Pending role" : status}</span></td><td className="text-gray-500">{date(user.last_sign_in_at)}</td><td className="relative text-right"><button onClick={() => setMenu(menu === user.user_id ? null : user.user_id)} className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="User actions"><MoreHorizontal size={18}/></button>{menu === user.user_id && <div className="absolute right-0 top-10 z-20 w-52 rounded-xl border bg-white p-1.5 text-left shadow-xl dark:border-gray-600 dark:bg-gray-900"><button onClick={() => navigate(`/dashboard/settings/users/${user.user_id}`)} className="w-full rounded-lg px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800">View profile</button><button onClick={() => setAction({type:"reset",user})} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800"><KeyRound size={15}/>Send password reset</button>{!protectedUser && <><button onClick={() => setAction({type:"disable",user})} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-amber-600"><Ban size={15}/>{user.is_active ? "Disable access" : "Enable access"}</button><button onClick={() => setAction({type:"delete",user})} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-red-600"><Trash2 size={15}/>Delete user</button></>}</div>}</td></tr>})}</tbody></table>{!filtered.length && <p className="py-12 text-center text-sm text-gray-500">No users match these filters.</p>}</div>
+    </section>
+    <InviteUserDialog open={inviteOpen} roles={roles} busy={busy} onOpenChange={setInviteOpen} onSubmit={invite}/>
+    <ConfirmActionDialog open={action?.type === "reset"} onOpenChange={o => !o && setAction(null)} title="Send password reset?" description={`A secure reset link will be emailed to ${action?.user.email || selected}.`} action="Send reset email" busy={busy} onConfirm={() => action && void run(() => userService({action:"reset_password",user_id:action.user.user_id}),"Password reset email sent.")}/>
+    <ConfirmActionDialog open={action?.type === "disable"} onOpenChange={o => !o && setAction(null)} title={action?.user.is_active ? "Disable dashboard access?" : "Enable dashboard access?"} description={action?.user.is_active ? `${selected} will no longer be able to use the dashboard.` : `${selected} will regain role-based access.`} action={action?.user.is_active ? "Disable access" : "Enable access"} danger={action?.user.is_active} busy={busy} onConfirm={() => action && void run(async()=>{const r=await supabase.from("dashboard_users").update({is_active:!action.user.is_active}).eq("user_id",action.user.user_id);if(r.error)throw r.error;},"User access updated.")}/>
+    <ConfirmActionDialog open={action?.type === "delete"} onOpenChange={o => !o && setAction(null)} title={`Delete ${selected}?`} description="This permanently removes the Auth user, membership, MFA factors, and passkeys." action="Delete user" danger busy={busy} confirmation="DELETE" value={confirmation} onValueChange={setConfirmation} onConfirm={() => action && void run(()=>userService({action:"delete_user",user_id:action.user.user_id}),"User deleted.")}/>
+  </div></div>;
 }

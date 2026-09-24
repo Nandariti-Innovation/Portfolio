@@ -7,14 +7,17 @@ import { PAGE_PERMISSIONS, useDashboardAccess } from "@/features/dashboardAccess
 
 const TemplatesPanel = lazy(() => import("./Settings/TemplatesPanel").then(module => ({ default: module.TemplatesPanel })));
 const UserManagement = lazy(() => import("./Dashboard/UserManagement"));
+const UserProfile = lazy(() => import("./Dashboard/UserProfile"));
+const UserRoles = lazy(() => import("./Dashboard/UserRoles"));
 const Security = lazy(() => import("./Dashboard/Security"));
 
-type Panel = "headings" | "templates" | "users" | "security";
+type Panel = "headings" | "templates" | "users" | "roles" | "security";
 
 const panels = [
   { key: "headings", label: "Homepage headings", description: "Review and edit section headings and homepage visibility.", icon: FileText },
   { key: "templates", label: "Section templates", description: "Create and manage reusable homepage layouts.", icon: LayoutTemplate },
   { key: "users", label: "User management", description: "Invite dashboard users and manage roles and access.", icon: Users },
+  { key: "roles", label: "Roles & permissions", description: "Create roles and control dashboard section access.", icon: ShieldCheck },
   { key: "security", label: "My security", description: "Manage MFA, authenticators, and passkeys.", icon: ShieldCheck },
 ] as const;
 
@@ -25,12 +28,13 @@ export const Settings = () => {
   const navigate = useNavigate();
   const [unsaved, setUnsaved] = useState(false);
   const segment = location.pathname.split("/").filter(Boolean).at(-1);
-  const panel: Panel | null = panels.some(item => item.key === segment) ? segment as Panel : null;
+  const userProfileId = location.pathname.match(/^\/dashboard\/settings\/users\/([0-9a-f-]{36})\/?$/i)?.[1] ?? null;
+  const panel: Panel | null = userProfileId ? "users" : panels.some(item => item.key === segment) ? segment as Panel : null;
   const width = collapsed ? "w-[calc(100vw-70px)]" : "w-[calc(100vw-240px)]";
   const isAllowed = (key: Panel) => key === "security" ||
     (key === "headings" && hasPermission(PAGE_PERMISSIONS.settings)) ||
     (key === "templates" && hasPermission(PAGE_PERMISSIONS.templates)) ||
-    (key === "users" && hasPermission(PAGE_PERMISSIONS.users));
+    ((key === "users" || key === "roles") && hasPermission(PAGE_PERMISSIONS.users));
   const visiblePanels = panels.filter(item => isAllowed(item.key));
 
   const selectPanel = (next: Panel | null) => {
@@ -64,7 +68,8 @@ export const Settings = () => {
           <div className="min-w-0">
             {panel === "headings" && <HeadingsEditor onUnsavedChange={setUnsaved}/>} 
             {panel === "templates" && <Suspense fallback={<p role="status" className="p-8 text-sm">Loading templates…</p>}><TemplatesPanel/></Suspense>}
-            {panel === "users" && <Suspense fallback={<p role="status" className="p-8 text-sm">Loading users…</p>}><UserManagement embedded/></Suspense>}
+            {panel === "users" && <Suspense fallback={<p role="status" className="p-8 text-sm">Loading users…</p>}>{userProfileId ? <UserProfile/> : <UserManagement embedded/>}</Suspense>}
+            {panel === "roles" && <Suspense fallback={<p role="status" className="p-8 text-sm">Loading roles…</p>}><UserRoles/></Suspense>}
             {panel === "security" && <Suspense fallback={<p role="status" className="p-8 text-sm">Loading security settings…</p>}><Security embedded/></Suspense>}
           </div>
         </div>}

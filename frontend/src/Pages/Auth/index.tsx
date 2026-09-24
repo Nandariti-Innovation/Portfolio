@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import supabase from "@/Superbase/client";
 import { useDashboardAccess } from "@/features/dashboardAccess/DashboardAccess";
 
@@ -88,6 +88,7 @@ export default function Auth() {
           <input type="email" autoComplete="email" required value={email} onChange={e => setEmail(e.target.value)} className="mt-1 w-full rounded-lg border p-3" /></label>
         <label className="block text-sm font-medium">Password
           <input type="password" autoComplete="current-password" required value={password} onChange={e => setPassword(e.target.value)} className="mt-1 w-full rounded-lg border p-3" /></label>
+        <div className="text-right"><Link to="/auth/forgot-password" className="text-sm text-primary hover:underline">Forgot password?</Link></div>
         <button disabled={busy} className="w-full rounded-lg bg-primary p-3 font-medium text-white disabled:opacity-50">Sign in</button>
         <button type="button" disabled={busy} onClick={() => void passkeySignIn()}
           className="w-full rounded-lg border p-3 font-medium disabled:opacity-50">Sign in with passkey</button>
