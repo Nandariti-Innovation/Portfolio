@@ -176,4 +176,21 @@ Safety rules:
 - Removing a field requires an explicit destructive-change confirmation in the dashboard.
 - The RPC requires the server-managed `app_metadata.portfolio_owner` claim and is executable only by `authenticated`.
 
-Section deletion and table-name/section-key changes are intentionally outside this workflow.
+Table-name and section-key changes are intentionally outside this workflow.
+
+## Deleting a custom section
+
+Only custom sections whose `section_key` and `table_name` match expose **Delete section**. Project, Experience, and Blog remain protected.
+
+The confirmation dialog runs `get_homepage_section_deletion_impact` before enabling deletion. It displays the physical table, row count, connected templates, and any other section that still uses one of those templates. The user must type the exact section key before deletion is enabled.
+
+`delete_homepage_section` performs the destructive work in this order inside one database transaction:
+
+1. Lock and revalidate the headings manifest.
+2. Reject built-in template dependencies or templates assigned to another section.
+3. Count the rows that will be removed.
+4. Delete the custom templates connected to the section.
+5. Remove the section from the headings manifest.
+6. Drop the section's physical table and reload the PostgREST schema cache.
+
+The table is dropped without `CASCADE`. Any unknown database dependency therefore aborts and rolls back the complete operation instead of deleting additional objects or leaving a partially deleted section. Both deletion RPCs require the server-managed `app_metadata.portfolio_owner` claim and are executable only by `authenticated` users. After completion, the dialog keeps the result visible until the user selects **Proceed**.

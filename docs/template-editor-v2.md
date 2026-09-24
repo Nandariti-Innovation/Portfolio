@@ -16,12 +16,16 @@ Choosing a preset copies its card structure into the template. It does not lock 
 
 1. Create or select a section schema in **Settings → Homepage headings**. The schema defines its table and available columns.
 2. Open **Settings → Section templates** and create or edit a template.
-3. Select the **Repeating items** block.
-4. Choose a preset, data source, item limit, order column, and direction.
-5. Edit the blocks inside the repeated card.
-6. Keep **Blocks** selected to edit content. For each editable property, choose **Static** or **Database field**.
-7. Switch to **Outline** to edit the selected block's layout and visual design.
-8. Publish the template, then assign it to a homepage section.
+3. Complete the template-details dialog: key, display name, description, and homepage availability. Existing template keys remain immutable.
+4. Continue into the full-page designer. Both sidebars start collapsed so the canvas gets the maximum available space; open Blocks or Outline when needed.
+5. Select the **Repeating items** block.
+6. Choose a preset, data source, item limit, order column, and direction.
+7. Edit the blocks inside the repeated card.
+8. Keep **Blocks** selected to edit content. For each editable property, choose **Static** or **Database field**.
+9. Switch to **Outline** to edit the selected block's layout and visual design.
+10. Publish the template, then assign it to a homepage section.
+
+**Close designer** is placed beside **Publish** in the editor header. Closing with unpublished metadata or canvas changes requires confirmation. Template metadata is saved together with the layout only when Publish succeeds.
 
 Example: a `certification` section can use the Blog cards preset. Its Heading can bind to `cert_name`, while a link can use a static label such as “View certificate” and a dynamic destination bound to `cert_url`.
 

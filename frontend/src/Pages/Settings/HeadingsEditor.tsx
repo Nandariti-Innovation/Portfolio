@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, Check, Database, Loader2, Pencil, Plus, RotateCcw, Save, X } from "lucide-react";
+import { AlertCircle, Check, Database, Loader2, Pencil, Plus, RotateCcw, Save, Trash2, X } from "lucide-react";
 import supabase from "@/Superbase/client";
 import type { SettingsType } from "@/StateManagement/Redux/@types";
 import {
@@ -11,6 +11,7 @@ import {
 import { validBinding, type TemplateDefinition } from "@/features/homepageSections/templates";
 import { NewSectionDialog } from "./NewSectionDialog";
 import { SectionSchemaEditor, type SchemaEditorTemplate } from "./SectionSchemaEditor";
+import { DeleteSectionDialog } from "./DeleteSectionDialog";
 
 const columns = "setting_id,setting_name,setting_object,schema_version,created_at,updated_at";
 const inputClass = "mt-1.5 w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500 dark:border-gray-600 dark:bg-gray-900 dark:disabled:bg-gray-800";
@@ -27,6 +28,7 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
   const [notice, setNotice] = useState("");
   const [creating, setCreating] = useState(false);
   const [schemaEditing, setSchemaEditing] = useState(false);
+  const [deletingSection, setDeletingSection] = useState(false);
   const [editing, setEditing] = useState(false);
   const [newSectionDirty, setNewSectionDirty] = useState(false);
   const [schemaDirty, setSchemaDirty] = useState(false);
@@ -193,7 +195,10 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
                   <button type="button" disabled={!saved.setting_object[selected] || JSON.stringify(section) === JSON.stringify(saved.setting_object[selected])} onClick={resetOne} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs disabled:opacity-40 dark:border-gray-600"><RotateCcw size={14}/>Reset section</button>
                   <button type="button" onClick={() => { setDraft(structuredClone(saved.setting_object)); setEditing(false); setError(""); }} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs dark:border-gray-600"><X size={14}/>Cancel edit</button>
                 </> : <>
-                  {section.table_name === section.section_key && !builtInSections.has(section.section_key) && <button type="button" onClick={() => setSchemaEditing(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs dark:border-gray-600"><Database size={14}/>Manage data fields</button>}
+                  {section.table_name === section.section_key && !builtInSections.has(section.section_key) && <>
+                    <button type="button" onClick={() => setSchemaEditing(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-xs dark:border-gray-600"><Database size={14}/>Manage data fields</button>
+                    <button type="button" onClick={() => setDeletingSection(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs text-red-600 dark:border-red-900"><Trash2 size={14}/>Delete section</button>
+                  </>}
                   <button type="button" onClick={() => setEditing(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-white"><Pencil size={14}/>Edit section</button>
                 </>}</div>
               </div>
@@ -258,5 +263,6 @@ export const HeadingsEditor = ({ onUnsavedChange }: { onUnsavedChange: (unsaved:
         const loaded = await load();
         if (loaded) { setSelected(key); setNotice(`“${key}” has been created. It remains inactive until a template is assigned.`); }
       }}/>} {schemaEditing && section && <SectionSchemaEditor open section={section} templates={templates} onOpenChange={setSchemaEditing} onDirtyChange={setSchemaDirty}
-      onUpdated={async () => { const loaded = await load(); if (loaded) setNotice(`The data fields for “${section.section_key}” were updated.`); }}/>}</section>;
+      onUpdated={async () => { const loaded = await load(); if (loaded) setNotice(`The data fields for “${section.section_key}” were updated.`); }}/>} {deletingSection && section && <DeleteSectionDialog open section={section} onOpenChange={setDeletingSection}
+      onDeleted={async () => { const deletedKey = section.section_key; const loaded = await load(); if (loaded) setNotice(`“${deletedKey}” and all of its connected resources were deleted.`); }}/>}</section>;
 };
