@@ -19,8 +19,9 @@ Choosing a preset copies its card structure into the template. It does not lock 
 3. Select the **Repeating items** block.
 4. Choose a preset, data source, item limit, order column, and direction.
 5. Edit the blocks inside the repeated card.
-6. For each editable property, choose **Static** or **Database field**.
-7. Publish the template, then assign it to a homepage section.
+6. Keep **Blocks** selected to edit content. For each editable property, choose **Static** or **Database field**.
+7. Switch to **Outline** to edit the selected block's layout and visual design.
+8. Publish the template, then assign it to a homepage section.
 
 Example: a `certification` section can use the Blog cards preset. Its Heading can bind to `cert_name`, while a link can use a static label such as “View certificate” and a dynamic destination bound to `cert_url`.
 
@@ -59,7 +60,18 @@ Each template must contain exactly one Repeating items block. Dynamic bindings a
 - Divider
 - Spacing
 
-Containers provide the main visual controls: surface, row/column/grid arrangement, gap, horizontal alignment, vertical alignment, and corner radius. Text blocks provide size, weight, alignment, tone, font family, exact font size, line height, letter spacing, font style, decoration, transformation, wrapping, and paragraph spacing. Images provide positioning, fit, aspect ratio, opacity, filters, overlay colour, and overlay opacity. Buttons and links provide an explicit text-colour control; buttons also provide style and size, while both support target behavior.
+## Content and design modes
+
+The left sidebar controls what appears in the selected block's right-hand properties panel:
+
+| Sidebar mode | Right panel contains |
+| --- | --- |
+| Blocks | Content source, static values, database-column bindings, links, and collection query settings |
+| Outline | Width, height, layout, spacing, typography, colours, borders, image appearance, and other visual controls |
+
+The selected block remains selected when switching modes, and both panels edit the same block. Switching modes does not discard values. Blocks with no controls in the active mode show a short empty-state message instead of unrelated settings.
+
+Containers provide the main visual controls: surface, row/column/grid arrangement, gap, horizontal alignment, vertical alignment, and corner radius. Text blocks provide size, weight (lighter, light, regular, medium, or bold), alignment, tone, font family, exact font size, line height, letter spacing, font style, decoration, transformation, wrapping, and paragraph spacing. Images provide positioning, fit, aspect ratio, opacity, filters, overlay colour, and overlay opacity. Buttons and links provide an explicit text-colour control; buttons also provide style and size, while both support target behavior.
 
 Every block and container also exposes **Width** and **Height** controls. Available values are Auto, Fit content, Full (100%), 25%, 33%, 50%, 66%, and 75%. Percentage height requires an ancestor with a defined height; otherwise Auto or Fit content is normally the appropriate choice. Puck's draggable wrapper receives the same dimensions, so row and grid layouts look the same in the editor and on the public homepage.
 

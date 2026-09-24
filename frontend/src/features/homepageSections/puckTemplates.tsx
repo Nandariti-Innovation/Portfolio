@@ -51,7 +51,7 @@ type AppearanceProps = {
 type DesignProps = SizingProps & BorderProps & AppearanceProps;
 type TextProps = DesignProps & {
   contentMode: SourceMode; contentValue: string; contentField: string;
-  size: "small" | "medium" | "large" | "xlarge"; weight: "regular" | "medium" | "bold"; align: "left" | "center" | "right"; tone: "default" | "muted" | "accent";
+  size: "small" | "medium" | "large" | "xlarge"; weight: "light" | "lighter" | "regular" | "medium" | "bold"; align: "left" | "center" | "right"; tone: "default" | "muted" | "accent";
   fontFamily?: "default" | "manrope" | "playfair" | "dm-mono";
   fontSize?: "default" | "12" | "14" | "16" | "18" | "20" | "24" | "30" | "36" | "48" | "64";
   lineHeight?: "normal" | "1" | "1.25" | "1.5" | "1.75" | "2";
@@ -100,7 +100,7 @@ const classes: Record<string, Record<string, string>> = {
   align: { start: "items-start", center: "items-center", end: "items-end" },
   radius: { none: "", medium: "rounded-lg", large: "rounded-2xl" },
   textSize: { small: "text-xs", medium: "text-sm", large: "text-xl md:text-2xl", xlarge: "text-3xl md:text-5xl" },
-  weight: { regular: "font-normal", medium: "font-medium", bold: "font-bold" },
+  weight: { light: "font-light", lighter: "", regular: "font-normal", medium: "font-medium", bold: "font-bold" },
   textAlign: { left: "text-left", center: "text-center", right: "text-right" },
   tone: { default: "text-[#f2efe9]", muted: "text-[#aaa7a2]", accent: "text-[#ff6b24]" },
   image: { portrait: "aspect-[4/5]", square: "aspect-square", landscape: "aspect-video" },
@@ -330,7 +330,7 @@ function textFields(props: Partial<TextProps>, fields: SectionDataField[], multi
     contentMode: modeField("Content"),
     ...(props.contentMode === "dynamic" ? { contentField: selectField("Database column", fields) } : { contentValue: { type: multiline ? "textarea" : "text", label: "Static content" } }),
     size: select("Text size", ["small", "medium", "large", "xlarge"]),
-    weight: select("Weight", ["regular", "medium", "bold"]),
+    weight: select("Weight", ["lighter", "light", "regular", "medium", "bold"]),
     align: select("Alignment", ["left", "center", "right"]),
     tone: select("Colour", ["default", "muted", "accent"]),
     fontFamily: { type: "select", label: "Font family", options: [{ label: "Block default", value: "default" }, { label: "Manrope", value: "manrope" }, { label: "Playfair Display", value: "playfair" }, { label: "DM Mono", value: "dm-mono" }] },
@@ -399,6 +399,7 @@ function TextElement({ kind, props }: { kind: TextStyle; props: TextProps }) {
     fontSize: props.fontSize && props.fontSize !== "default" ? `${props.fontSize}px` : undefined,
     lineHeight: props.lineHeight === "normal" || !props.lineHeight ? undefined : Number(props.lineHeight),
     letterSpacing: tracking[props.letterSpacing || "normal"], fontStyle: props.italic || "normal",
+    fontWeight: props.weight === "lighter" ? "lighter" : undefined,
     textDecoration: props.decoration || "none", textTransform: props.transform === "none" || !props.transform ? undefined : props.transform,
     whiteSpace: props.wrapping || "normal", marginBottom: `${props.paragraphSpacing || "0"}px`,
   };

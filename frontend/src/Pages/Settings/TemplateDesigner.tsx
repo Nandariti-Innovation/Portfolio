@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { Children, isValidElement, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
-import { Puck } from "@puckeditor/core";
+import { createUsePuck, Puck, type Overrides } from "@puckeditor/core";
 import "@puckeditor/core/puck.css";
 import supabase from "@/Superbase/client";
 import { parseHeadingManifest, type HomepageSectionConfiguration, type SectionFieldType } from "@/features/homepageSections/manifest";
@@ -9,6 +9,38 @@ import { analyzeTemplate, asPuckLayout, createTemplateConfig, type PuckTemplateD
 
 type SectionTemplate = TemplateDefinition & { reference_section_key: string | null; display_fields: string[] };
 const input = "mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-900";
+
+const designFieldNames = new Set([
+  "width", "height", "innerSpacing", "outerSpacing", "background", "opacity", "overflow", "aspectRatio", "shadow", "rotation",
+  "position", "positionOffsets", "zIndex", "borderStyle", "borderWidth", "borderColor", "borderSides", "borderRadius",
+  "layout", "desktopColumns", "gap", "surface", "arrangement", "justify", "align", "padding", "radius",
+  "size", "weight", "tone", "fontFamily", "fontSize", "lineHeight", "letterSpacing", "italic", "decoration", "transform",
+  "wrapping", "paragraphSpacing", "fit", "shape", "imagePosition", "imageAspect", "imageOpacity", "brightness", "contrast",
+  "saturation", "grayscale", "overlayColor", "overlayOpacity", "format", "variant", "textColor",
+]);
+
+const useTemplatePuck = createUsePuck();
+
+const fieldNameFromChild = (child: ReactNode) => {
+  if (!isValidElement(child) || child.key === null) return "";
+  return String(child.key).replace(/^\.\$/, "").replace(/^\$/, "");
+};
+
+function TemplateFields({ children, isLoading }: { children: ReactNode; isLoading: boolean }) {
+  const activePlugin = useTemplatePuck((state) => state.appState.ui.plugin.current);
+  const designMode = activePlugin === "outline";
+  const visibleFields = Children.toArray(children).filter((child) => designFieldNames.has(fieldNameFromChild(child)) === designMode);
+
+  return <div className="grid gap-4 p-4">
+    <div className="border-b border-gray-200 pb-3 dark:border-gray-700">
+      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{designMode ? "Design" : "Content"}</p>
+      <p className="mt-1 text-xs text-gray-500">{designMode ? "Edit layout, spacing, typography, borders, and visual styles." : "Choose static or database content and edit the block's data."}</p>
+    </div>
+    {visibleFields.length ? visibleFields : !isLoading && <p className="text-xs text-gray-500">This block has no {designMode ? "design" : "content"} controls.</p>}
+  </div>;
+}
+
+const templateOverrides: Partial<Overrides> = { fields: TemplateFields };
 
 const sampleValue = (field: { key: string; label: string; type: SectionFieldType }, index: number) => {
   if (field.type === "string_array") return ["React", "Design", "Portfolio"];
@@ -131,6 +163,7 @@ export function TemplateDesigner({ original, onClose, onSaved }: { original: Sec
     <div className="mb-2 flex justify-end"><button type="button" onClick={onClose} className="rounded-lg border px-4 py-2 text-sm">Close designer</button></div>
     <div className="overflow-hidden rounded-xl border border-gray-300 text-gray-900 dark:border-gray-600">
       <Puck config={config} data={initial.puck_data as PuckTemplateData}
+        overrides={templateOverrides}
         onChange={(data) => { const next = sourceFromData(data); if (next && next !== selectedSource) setSelectedSource(next); }}
         onPublish={async (data) => { if (!busy) await save(data); }}/>
     </div>
