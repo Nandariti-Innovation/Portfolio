@@ -59,7 +59,7 @@ type TextProps = DesignProps & {
   italic?: "normal" | "italic";
   decoration?: "none" | "underline" | "line-through";
   transform?: "none" | "uppercase" | "lowercase" | "capitalize";
-  wrapping?: "normal" | "nowrap";
+  wrapping?: "normal" | "nowrap" | "short-wrap";
   paragraphSpacing?: SpaceValue;
 };
 type Blocks = {
@@ -340,7 +340,7 @@ function textFields(props: Partial<TextProps>, fields: SectionDataField[], multi
     italic: { type: "radio", label: "Font style", options: [{ label: "Normal", value: "normal" }, { label: "Italic", value: "italic" }] },
     decoration: { type: "select", label: "Text decoration", options: [{ label: "None", value: "none" }, { label: "Underline", value: "underline" }, { label: "Line through", value: "line-through" }] },
     transform: select("Text transformation", ["none", "uppercase", "lowercase", "capitalize"]),
-    wrapping: { type: "select", label: "Text wrapping", options: [{ label: "Normal", value: "normal" }, { label: "No wrap", value: "nowrap" }] },
+    wrapping: { type: "select", label: "Text wrapping", options: [{ label: "Normal", value: "normal" }, { label: "No wrap", value: "nowrap" }, { label: "Short wrap", value: "short-wrap" }] },
     paragraphSpacing: { type: "select", label: "Paragraph spacing", options: spacingValues.map((value) => ({ label: `${value}px`, value })) },
   });
 }
@@ -394,6 +394,7 @@ function TextElement({ kind, props }: { kind: TextStyle; props: TextProps }) {
   const className = `${kind === "heading" ? "font-serif" : ""} ${classes.textSize[props.size]} ${classes.weight[props.weight]} ${classes.textAlign[props.align]} ${classes.tone[props.tone]}`;
   const fontFamilies = { manrope: '"Manrope", sans-serif', playfair: '"Playfair Display", serif', "dm-mono": '"DM Mono", monospace' } as const;
   const tracking = { normal: "normal", tight: "-0.025em", wide: "0.05em", wider: "0.1em", widest: "0.2em" } as const;
+  const isShortWrap = props.wrapping === "short-wrap";
   const textStyle: CSSProperties = {
     fontFamily: props.fontFamily && props.fontFamily !== "default" ? fontFamilies[props.fontFamily] : undefined,
     fontSize: props.fontSize && props.fontSize !== "default" ? `${props.fontSize}px` : undefined,
@@ -401,7 +402,12 @@ function TextElement({ kind, props }: { kind: TextStyle; props: TextProps }) {
     letterSpacing: tracking[props.letterSpacing || "normal"], fontStyle: props.italic || "normal",
     fontWeight: props.weight === "lighter" ? "lighter" : undefined,
     textDecoration: props.decoration || "none", textTransform: props.transform === "none" || !props.transform ? undefined : props.transform,
-    whiteSpace: props.wrapping || "normal", marginBottom: `${props.paragraphSpacing || "0"}px`,
+    whiteSpace: props.wrapping === "nowrap" ? "nowrap" : "normal",
+    display: isShortWrap ? "-webkit-box" : undefined,
+    WebkitBoxOrient: isShortWrap ? "vertical" : undefined,
+    WebkitLineClamp: isShortWrap ? 3 : undefined,
+    overflow: isShortWrap ? "hidden" : undefined,
+    marginBottom: `${props.paragraphSpacing || "0"}px`,
   };
   if (kind === "heading") return <Sized props={props}><h3 className={className} style={textStyle}>{label}</h3></Sized>;
   if (kind === "subheading") return <Sized props={props}><h4 className={className} style={textStyle}>{label}</h4></Sized>;
