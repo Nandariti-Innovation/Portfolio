@@ -1,24 +1,40 @@
-import { useEffect, useState } from 'react';
-import supabase from '@/Superbase/client';
-import { useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import type { RootState } from '@/StateManagement/Redux/reduxStore';
-import { attachResumeTracking, setVisitorRoute } from '@/utils/visitorTracking';
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { attachResumeTracking, setVisitorRoute } from "@/utils/visitorTracking";
+
+type IdleWindow = Window & {
+  requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+  cancelIdleCallback?: (id: number) => void;
+};
+
+function afterInitialRender(callback: () => void) {
+  const idleWindow = window as IdleWindow;
+  if (idleWindow.requestIdleCallback) {
+    const id = idleWindow.requestIdleCallback(callback, { timeout: 2_000 });
+    return () => idleWindow.cancelIdleCallback?.(id);
+  }
+  const id = window.setTimeout(callback, 1_000);
+  return () => window.clearTimeout(id);
+}
 
 export function VisitorTracker() {
   const { pathname, search } = useLocation();
-  const { isAuth } = useSelector((state: RootState) => state.authentication);
-  const [hasSession, setHasSession] = useState<boolean | null>(null);
+
+  useEffect(
+    () => afterInitialRender(() => setVisitorRoute(pathname, search)),
+    [pathname, search],
+  );
+
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setHasSession(Boolean(session));
-      if (session) setVisitorRoute(window.location.pathname, '', true);
+    let detach: (() => void) | undefined;
+    const cancel = afterInitialRender(() => {
+      detach = attachResumeTracking();
     });
-    return () => subscription.unsubscribe();
+    return () => {
+      cancel();
+      detach?.();
+    };
   }, []);
-  useEffect(() => {
-    setVisitorRoute(pathname, search, isAuth || hasSession !== false);
-  }, [pathname, search, isAuth, hasSession]);
-  useEffect(() => attachResumeTracking(), []);
+
   return null;
 }

@@ -16,6 +16,7 @@ export type SkillsItem = {
 
 export type ProjectItem = {
   project_id?: number;
+  case_study_template_key?: string | null;
   project_name: string;
   project_image: string;
   project_features: string[];
@@ -62,13 +63,6 @@ export type HeroSectionType = {
   >;
 };
 
-export type ServiceItem = {
-  services_id: string;
-  service_image: string;
-  service_link: string | null;
-  service_name: string;
-};
-
 export type SocialItem = {
   social_id: number;
   social_title: string;
@@ -95,18 +89,6 @@ export type ExperienceType = {
   work_tech_stack: string[];
   work_type: "full-time" | "part-time" | "freelance";
   work_short_description: string;
-};
-
-export type MentorshipType = {
-  mentor_title: string;
-  mentor_image: string;
-  mentor_description: string;
-  mentor_link: string;
-  mentor_button: string;
-  mentor_projects_no: number;
-  mentor_sessions_no: number;
-  mentor_projects_text: string;
-  mentor_sessions_text: string;
 };
 
 export type SettingsType<TSettingObject = unknown> = {

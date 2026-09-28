@@ -5,9 +5,11 @@ import type { ProjectItem } from '@/StateManagement/Redux/@types';
 import supabase from '@/Superbase/client';
 import { projectStyles as styles } from '../ProjectPage/projectStyles';
 import { CaseStudyContent } from './CaseStudyContent';
+import { CaseStudyLayout } from '@/features/caseStudyTemplates/CaseStudyLayout';
+import { validateCaseLayout, type CaseLayout } from '@/features/caseStudyTemplates/model';
 import { useContactModal } from '@/hooks/useContactModal';
 
-type Result = { id: string; project: ProjectItem | null; failed: boolean };
+type Result = { id: string; project: ProjectItem | null; layout: CaseLayout | null; failed: boolean };
 
 export default function ProjectCaseStudy() {
   const { projectID = '' } = useParams();
@@ -25,9 +27,18 @@ export default function ProjectCaseStudy() {
       try {
         const { data, error } = await supabase.from('projects').select('*')
           .eq('project_id', Number(projectID)).maybeSingle();
-        if (!cancelled) setResult({ id: projectID, project: error ? null : data, failed: Boolean(error) });
+        let layout: CaseLayout | null = null;
+        if (!error && data?.case_study_template_key) {
+          const template = await supabase.from('case_study_templates').select('layout')
+            .eq('template_key', data.case_study_template_key).eq('is_published', true).maybeSingle();
+          if (template.data?.layout) {
+            try { validateCaseLayout(template.data.layout); layout = template.data.layout; }
+            catch { /* Invalid or unavailable layouts use the original case study. */ }
+          }
+        }
+        if (!cancelled) setResult({ id: projectID, project: error ? null : data, layout, failed: Boolean(error) });
       } catch {
-        if (!cancelled) setResult({ id: projectID, project: null, failed: true });
+        if (!cancelled) setResult({ id: projectID, project: null, layout: null, failed: true });
       }
     }
     void fetchProject();
@@ -52,7 +63,7 @@ export default function ProjectCaseStudy() {
       </header>
       <main className={styles.main}>
         <Link to="/projects" className="inline-flex items-center gap-2 py-7 text-xs text-[#aaa7a2] hover:text-[#ff6b24]"><ArrowLeft size={14} /> All projects</Link>
-        {current?.project ? <CaseStudyContent key={projectID} project={current.project} /> : (
+        {current?.project ? current.layout ? <CaseStudyLayout data={current.layout} project={current.project}/> : <CaseStudyContent key={projectID} project={current.project} /> : (
           <div className="flex min-h-[65vh] flex-col items-center justify-center gap-5 text-center" aria-live="polite" aria-busy={loading}>
             {loading ? <><Loader2 className="animate-spin text-[#ff6b24] motion-reduce:animate-none" size={30} /><p>Loading the case study…</p></> : <>
               <p className={styles.eyebrow}>PROJECT CASE STUDY</p>

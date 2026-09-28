@@ -28,7 +28,6 @@ type ModelLayerProps = {
 
 const PREVIEW_MODEL_URL = "/threejsobjects/person/person-preview.glb";
 const DETAILED_MODEL_URL = "/threejsobjects/person/person-detailed.glb";
-const ORIGINAL_MODEL_URL = "/threejsobjects/person/model.glb";
 const MODEL_HEIGHT = 4.4;
 const CROSSFADE_SECONDS = 0.4;
 
@@ -185,20 +184,10 @@ const ProgressiveCharacter = ({ onReady }: Pick<CharacterProps, "onReady">) => {
     if (transition.current === 1 && showPreview) setShowPreview(false);
   });
 
-  const originalFallback = (
-    <Suspense fallback={null}>
-      <ModelLayer
-        initialOpacity={1}
-        onFirstRender={handlePreviewReady}
-        url={ORIGINAL_MODEL_URL}
-      />
-    </Suspense>
-  );
-
   return (
     <>
       {showPreview && (
-        <ModelErrorBoundary fallback={originalFallback}>
+        <ModelErrorBoundary fallback={null}>
           <Suspense fallback={null}>
             <ModelLayer
               groupRef={previewRef}

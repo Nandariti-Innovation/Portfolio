@@ -1,6 +1,5 @@
-import supabase from "@/Superbase/client";
 import { HeroSectionType } from "../@types";
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 
 interface HeroSectionState {
   loading: boolean;
@@ -34,15 +33,6 @@ const initialState: HeroSectionState = {
   error: false,
 };
 
-const fetchHeroSectionData = createAsyncThunk(
-  "herosection/fetchData",
-  async (_, { rejectWithValue }) => {
-    const { data, error } = await supabase.from("home_hero").select("*");
-    if (error) return rejectWithValue(error.message);
-    return data[0] || dummyData;
-  },
-);
-
 const herosectionSlice = createSlice({
   name: "herosection",
   initialState,
@@ -50,21 +40,6 @@ const herosectionSlice = createSlice({
     updateHeroSection: (state, action) => {
       state.HeroSection = action.payload;
     },
-  },
-  extraReducers: (builder) => {
-    builder
-      .addCase(fetchHeroSectionData.pending, (state) => {
-        state.loading = true;
-        state.error = false;
-      })
-      .addCase(fetchHeroSectionData.fulfilled, (state, action) => {
-        state.HeroSection = action.payload;
-        state.loading = false;
-      })
-      .addCase(fetchHeroSectionData.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      });
   },
 });
 

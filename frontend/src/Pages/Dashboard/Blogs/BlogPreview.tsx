@@ -1,13 +1,13 @@
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Clock3, Edit3, Loader2 } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { settingContext } from "@/StateManagement/ContextAPI/SettingContext/SettingContext";
+import { useDashboardUi } from "@/features/dashboardUi/DashboardUi";
 import supabase from "@/Superbase/client";
 import { contentHtml, dateLabel } from "./blogUtils";
 import type { Blog } from "./types";
 
 export default function BlogPreview() {
-  const { collapsed } = useContext(settingContext);
+  const { collapsed } = useDashboardUi();
   const { blogId } = useParams();
   const [blog, setBlog] = useState<Blog | null>(null);
   const [loading, setLoading] = useState(true);

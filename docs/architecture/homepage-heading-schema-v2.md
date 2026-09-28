@@ -158,3 +158,39 @@ The homepage continues to make one `get_homepage_payload` request. Adding config
 4. Verify validation, permissions, Redux state and public rendering, then enable the section.
 
 The function requires `app_metadata.portfolio_owner = true` on the signed-in dashboard account. This is server-managed Auth metadata, not user-editable metadata; refresh the session after assigning it. The function must be deployed before the new-section action can succeed. Newly created tables initially grant only the owner access; public read policy comes with the template/data integration, before activation.
+
+## Altering a custom section
+
+Custom sections whose `section_key` and `table_name` match expose **Manage data fields** in Settings → Homepage headings. The editor can change labels and required status, add fields, and—when no template depends on the field—rename, change the type of, or remove fields.
+
+`alter_homepage_section_schema` owns the complete operation. It locks the headings settings row, validates the proposed field list, alters the physical table, updates the manifest, increments `data_schema.version`, and asks PostgREST to reload its schema cache in one transaction. Any failure rolls back both the table and manifest changes.
+
+Safety rules:
+
+- Project, Experience, and Blog schemas remain protected.
+- System columns cannot be changed or removed.
+- A template-bound field cannot be renamed, retyped, or removed until the template is rebound.
+- Populated tables allow only lossless type changes: text-family interchange, integer to number, and date to datetime.
+- New required fields are blocked on populated tables. Add them as optional, populate existing rows, then mark them required.
+- Setting a field to required is blocked while any row contains `NULL`.
+- Removing a field requires an explicit destructive-change confirmation in the dashboard.
+- The RPC requires the server-managed `app_metadata.portfolio_owner` claim and is executable only by `authenticated`.
+
+Table-name and section-key changes are intentionally outside this workflow.
+
+## Deleting a custom section
+
+Only custom sections whose `section_key` and `table_name` match expose **Delete section**. Project, Experience, and Blog remain protected.
+
+The confirmation dialog runs `get_homepage_section_deletion_impact` before enabling deletion. It displays the physical table, row count, connected templates, and any other section that still uses one of those templates. The user must type the exact section key before deletion is enabled.
+
+`delete_homepage_section` performs the destructive work in this order inside one database transaction:
+
+1. Lock and revalidate the headings manifest.
+2. Reject built-in template dependencies or templates assigned to another section.
+3. Count the rows that will be removed.
+4. Delete the custom templates connected to the section.
+5. Remove the section from the headings manifest.
+6. Drop the section's physical table and reload the PostgREST schema cache.
+
+The table is dropped without `CASCADE`. Any unknown database dependency therefore aborts and rolls back the complete operation instead of deleting additional objects or leaving a partially deleted section. Both deletion RPCs require the server-managed `app_metadata.portfolio_owner` claim and are executable only by `authenticated` users. After completion, the dialog keeps the result visible until the user selects **Proceed**.

@@ -1,10 +1,10 @@
-import { useContext,useEffect,useMemo,useState } from 'react';
+import { useEffect,useMemo,useState } from 'react';
 import { BriefcaseBusiness,Building2,CircleCheck,Loader2,Plus,RefreshCw,Search } from 'lucide-react';
 import { Dialog } from 'radix-ui'; import { useDispatch,useSelector } from 'react-redux';
-import { settingContext } from '@/StateManagement/ContextAPI/SettingContext/SettingContext'; import type { AppDispatch,RootState } from '@/StateManagement/Redux/reduxStore'; import { fetchExperienceData } from '@/StateManagement/Redux/slices/experience';
+import { useDashboardUi } from '@/features/dashboardUi/DashboardUi'; import type { AppDispatch,RootState } from '@/StateManagement/Redux/reduxStore'; import { fetchExperienceData } from '@/StateManagement/Redux/slices/experience';
 import { ExperienceCard } from './Component/ExperienceCard'; import { NewExperienceModal } from './Component/NewExperienceModal';
 export default function DashboardExperience(){
- const dispatch=useDispatch<AppDispatch>();const{collapsed}=useContext(settingContext);const{experience,loading,error}=useSelector((s:RootState)=>s.experience);const[search,setSearch]=useState('');const[type,setType]=useState('all');
+ const dispatch=useDispatch<AppDispatch>();const{collapsed}=useDashboardUi();const{experience,loading,error}=useSelector((s:RootState)=>s.experience);const[search,setSearch]=useState('');const[type,setType]=useState('all');
  useEffect(()=>{if(!experience.length)void dispatch(fetchExperienceData())},[dispatch,experience.length]);
  const visible=useMemo(()=>experience.filter(item=>{const term=search.trim().toLowerCase();const match=!term||[item.work_company_name,item.work_designation,item.work_location,...item.work_tech_stack].some(v=>String(v||'').toLowerCase().includes(term));return match&&(type==='all'||item.work_type===type)}),[experience,search,type]);
  const width=collapsed?'w-[calc(100vw-70px)]':'w-[calc(100vw-240px)]';

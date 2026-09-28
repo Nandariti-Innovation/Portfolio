@@ -1,7 +1,7 @@
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Loader2, Plus, Trash2 } from "lucide-react";
-import { settingContext } from "@/StateManagement/ContextAPI/SettingContext/SettingContext";
+import { useDashboardUi } from "@/features/dashboardUi/DashboardUi";
 import supabase from "@/Superbase/client";
 import { parseHeadingManifest, type HomepageSectionConfiguration, type SectionDataField } from "@/features/homepageSections/manifest";
 
@@ -11,7 +11,7 @@ const input = "mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3
 
 export default function SectionsDashboard() {
   const { sectionKey } = useParams();
-  const { collapsed } = useContext(settingContext);
+  const { collapsed } = useDashboardUi();
   const [sections, setSections] = useState<HomepageSectionConfiguration[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
   const [draft, setDraft] = useState<Row | null>(null);
@@ -81,7 +81,7 @@ export default function SectionsDashboard() {
           {s.section_key.replaceAll("_", " ")}{s.enabled ? " · Live" : " · Draft"}</Link>)}</div>}
       {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       {notice && <p role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</p>}
-      {!section && !loading && <p className="rounded-xl border p-6 text-sm">Choose a created section, or create one in <Link className="text-primary underline" to="/dashboard/setting">Settings</Link>.</p>}
+      {!section && !loading && <p className="rounded-xl border p-6 text-sm">Choose a created section, or create one in <Link className="text-primary underline" to="/dashboard/settings/headings">Settings</Link>.</p>}
       {section && <>
         <div className="flex items-center justify-between"><h2 className="text-xl font-semibold capitalize">{section.section_key.replaceAll("_", " ")}</h2>
           <button type="button" onClick={() => setDraft({ display_order: rows.length, is_visible: false })} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-white"><Plus size={16}/>Add record</button></div>

@@ -1,14 +1,14 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CircleCheck, Loader2, RefreshCw, Rocket, Search, Star } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { settingContext } from '@/StateManagement/ContextAPI/SettingContext/SettingContext';
+import { useDashboardUi } from '@/features/dashboardUi/DashboardUi';
 import type { AppDispatch, RootState } from '@/StateManagement/Redux/reduxStore';
 import { fetchProjectsList } from '@/StateManagement/Redux/slices/projects';
 import { PorjectCard } from './Components/PorjectCard';
 import { NewProjectCard } from './Components/newProjectCard';
 
 export default function Projects() {
-  const dispatch=useDispatch<AppDispatch>(); const { collapsed }=useContext(settingContext);
+  const dispatch=useDispatch<AppDispatch>(); const { collapsed }=useDashboardUi();
   const { projects,loading,error }=useSelector((state:RootState)=>state.projects);
   const [search,setSearch]=useState(''); const [type,setType]=useState('all');
   useEffect(()=>{ if(!projects.length) void dispatch(fetchProjectsList()); },[dispatch,projects.length]);
