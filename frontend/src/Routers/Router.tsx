@@ -8,6 +8,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { useContactModal } from "@/hooks/useContactModal";
+import { PageLoader } from "@/components/PageLoader";
 
 const HomePage = lazy(() => import("@/Pages/Home"));
 const CaseStudy = lazy(() => import("@/Pages/CaseStudy"));
@@ -31,7 +32,7 @@ export const Router = () => {
       <RouteErrorBoundary
         key={location.pathname.startsWith("/dashboard") ? "dashboard" : location.pathname}
       >
-        <Suspense fallback={<RouteFallback />}>
+        <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route index element={<HomePage />} />
             <Route path="project" element={<Navigate to="/projects" replace />} />
@@ -79,19 +80,6 @@ class RouteErrorBoundary extends React.Component<
     return this.props.children;
   }
 }
-
-const RouteFallback = () => (
-  <div
-    className="grid min-h-screen place-items-center bg-background text-primary dark:bg-darkthemebg"
-    role="status"
-    aria-live="polite"
-  >
-    <div className="flex flex-col items-center gap-4">
-      <span className="size-9 animate-spin rounded-full border-4 border-current border-r-transparent" />
-      <span className="text-sm font-medium">Loading page…</span>
-    </div>
-  </div>
-);
 
 const RouteErrorFallback = () => (
   <main className="grid min-h-screen place-items-center bg-background px-6 text-center text-gray-900 dark:bg-darkthemebg dark:text-white">
