@@ -7,7 +7,7 @@ export const PageLoader = ({
   message = "Loading page…",
   hint = "Good things take a moment.",
 }: PageLoaderProps) => (
-  <div className="scene-loader" role="status" aria-live="polite" aria-busy="true">
+  <div className="scene-loader page-loader" role="status" aria-live="polite" aria-busy="true">
     <div className="loader-content">
       <img
         src="/svg/typing_code_loader.svg"
