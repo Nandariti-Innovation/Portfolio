@@ -5,6 +5,7 @@ import supabase from "@/Superbase/client";
 import type { DynamicSection, TemplateDefinition } from "@/features/homepageSections/templates";
 import { VisualTemplate } from "@/features/homepageSections/puckTemplates";
 import { TemplateDetailsDialog, type TemplateDetails } from "./TemplateDetailsDialog";
+import { PageLoader } from "@/components/PageLoader";
 
 type SectionTemplate = TemplateDefinition & {
   reference_section_key: string | null;
@@ -79,7 +80,7 @@ export const TemplatesPanel = () => {
     />}
     {editing && createPortal(
       <div className="fixed inset-0 z-[100] overflow-hidden bg-white dark:bg-gray-800" aria-label="Template layout designer">
-        <Suspense fallback={<p className="p-8 text-sm">Loading designer…</p>}><TemplateDesigner key={editing.original?.template_key || "new"} original={editing.original} details={editing.details}
+        <Suspense fallback={<PageLoader message="Loading template designer…" />}><TemplateDesigner key={editing.original?.template_key || "new"} original={editing.original} details={editing.details}
           onClose={() => setEditing(null)} onSaved={() => { setEditing(null); setLoading(true); setRefresh((value) => value + 1); }}/></Suspense>
       </div>, document.body)}
   </section>;
