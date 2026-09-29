@@ -11,6 +11,7 @@ import {
 } from "@/features/dashboardAccess/DashboardAccess";
 import { DashboardUiProvider } from "@/features/dashboardUi/DashboardUi";
 import { dashboardStore } from "@/StateManagement/Redux/dashboardStore";
+import { PageLoader } from "@/components/PageLoader";
 
 const Auth = lazy(() => import("@/Pages/Auth"));
 const Dashboard = lazy(() => import("@/Pages/Dashboard"));
@@ -34,7 +35,7 @@ export default function DashboardRouter() {
     <Provider store={dashboardStore}>
       <DashboardAccessProvider>
         <DashboardUiProvider>
-        <Suspense fallback={<DashboardPageFallback />}>
+        <Suspense fallback={<PageLoader message="Loading dashboard…" />}>
           <Routes>
             <Route path="auth" element={<Auth />} />
             <Route element={<PrivateRouter />}>
@@ -71,29 +72,11 @@ export default function DashboardRouter() {
   );
 }
 
-const DashboardPageFallback = () => (
-  <main className="grid min-h-screen place-items-center bg-background text-primary dark:bg-darkthemebg" role="status" aria-live="polite">
-    <div className="flex flex-col items-center gap-3">
-      <span className="size-8 animate-spin rounded-full border-4 border-current border-r-transparent motion-reduce:animate-none" />
-      <span className="text-sm font-medium">Loading page…</span>
-    </div>
-  </main>
-);
-
-const DashboardRouteFallback = () => (
-  <main className="grid h-full min-w-0 flex-1 place-items-center bg-background text-primary dark:bg-darkthemebg" role="status" aria-live="polite">
-    <div className="flex flex-col items-center gap-3">
-      <span className="size-8 animate-spin rounded-full border-4 border-current border-r-transparent motion-reduce:animate-none" />
-      <span className="text-sm font-medium">Loading page…</span>
-    </div>
-  </main>
-);
-
 const PrivateRouter = () => {
   const { user, active, role, isMfaSatisfied, loading, error } = useDashboardAccess();
   const location = useLocation();
 
-  if (loading) return <DashboardPageFallback />;
+  if (loading) return <PageLoader message="Checking dashboard access…" />;
   if (!user) return <Navigate to="/dashboard/auth" replace />;
   if (error) return <main role="alert" className="p-8">Unable to check dashboard access: {error}</main>;
   const securityRoute = location.pathname === "/dashboard/settings/security" || location.pathname === "/dashboard/security";
@@ -105,7 +88,7 @@ const PrivateRouter = () => {
       <Header />
       <div className="dashboard-content flex h-[calc(100vh-var(--spacing-navbar))] w-full items-center">
         <Sidebar />
-        <Suspense fallback={<DashboardRouteFallback />}>
+        <Suspense fallback={<PageLoader message="Loading dashboard page…" />}>
           <Outlet />
         </Suspense>
       </div>
