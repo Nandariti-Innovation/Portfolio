@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { DropdownMenu } from "radix-ui";
 import { Ban, Clock3, KeyRound, LockKeyhole, MoreHorizontal, Search, Trash2, UserCheck, UserPlus, Users } from "lucide-react";
 import supabase from "@/Superbase/client";
-import { ConfirmActionDialog } from "@/components/ConfirmActionDialog";
+import { ConfirmActionDialog } from "@/Components/ConfirmActionDialog";
 import { InviteUserDialog } from "./UserManagement/InviteUserDialog";
 import { functionError, userService, type AuthUserSummary, type DashboardMember, type Role } from "@/features/dashboardUsers/api";
 

@@ -1,20 +1,20 @@
 import { lazy, Suspense, useCallback, useRef, useState } from "react";
-import { Navigation } from "@/components/Navigation";
-import { Hero } from "@/components/sections/Hero";
-import { useScrollProgress } from "@/hooks/useScrollProgress";
+import { Navigation } from "@/Components/Navigation";
+import { Hero } from "@/Components/sections/Hero";
+import { useScrollProgress } from "@/Hooks/useScrollProgress";
 import { useFetchHomePage } from "@/Hooks/FetchHomePage";
 
 const PortfolioScene = lazy(() =>
-  import("@/components/scene/PortfolioScene").then((module) => ({ default: module.PortfolioScene })),
+  import("@/Components/scene/PortfolioScene").then((module) => ({ default: module.PortfolioScene })),
 );
 const About = lazy(() =>
-  import("@/components/sections/About").then((module) => ({ default: module.About })),
+  import("@/Components/sections/About").then((module) => ({ default: module.About })),
 );
 const DynamicSections = lazy(() =>
-  import("@/components/sections/DynamicSections").then((module) => ({ default: module.DynamicSections })),
+  import("@/Components/sections/DynamicSections").then((module) => ({ default: module.DynamicSections })),
 );
 const Contact = lazy(() =>
-  import("@/components/sections/Contact").then((module) => ({ default: module.Contact })),
+  import("@/Components/sections/Contact").then((module) => ({ default: module.Contact })),
 );
 
 const App = () => {

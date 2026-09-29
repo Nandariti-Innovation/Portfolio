@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from "react";
-import { VisitorTracker } from "@/components/VisitorTracker";
+import { VisitorTracker } from "@/Components/VisitorTracker";
 import {
   Navigate,
   Route,
@@ -7,7 +7,7 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
-import { useContactModal } from "@/hooks/useContactModal";
+import { useContactModal } from "@/Hooks/useContactModal";
 
 const HomePage = lazy(() => import("@/Pages/Home"));
 const CaseStudy = lazy(() => import("@/Pages/CaseStudy"));

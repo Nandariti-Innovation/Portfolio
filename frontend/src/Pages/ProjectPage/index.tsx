@@ -6,7 +6,7 @@ import type { AppDispatch, RootState } from "@/StateManagement/Redux/reduxStore"
 import { fetchProjectsList } from "@/StateManagement/Redux/slices/projects";
 import { ProjectCard } from "./ProjectCard";
 import { projectStyles as styles } from "./projectStyles";
-import { useContactModal } from "@/hooks/useContactModal";
+import { useContactModal } from "@/Hooks/useContactModal";
 
 const categories = [
   { value: "all", label: "All work" },

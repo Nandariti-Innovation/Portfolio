@@ -3,7 +3,7 @@ import { createContext, useContext, type CSSProperties, type ReactNode } from "r
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Config, Data, Slot } from "@puckeditor/core";
-import { HomepageSectionHeading } from "@/components/sections/HomepageSectionHeading";
+import { HomepageSectionHeading } from "@/Components/sections/HomepageSectionHeading";
 import type { HomepageSectionConfiguration, SectionDataField, SectionFieldType } from "./manifest";
 import {
   bindingValue,

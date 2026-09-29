@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Ban, KeyRound, Laptop, LockKeyhole, ShieldCheck, Trash2 } from "lucide-react";
 import supabase from "@/Superbase/client";
-import { ConfirmActionDialog } from "@/components/ConfirmActionDialog";
+import { ConfirmActionDialog } from "@/Components/ConfirmActionDialog";
 import { functionError, userService, type AuthUserSummary, type DashboardMember, type Factor, type Passkey, type Permission, type Role } from "@/features/dashboardUsers/api";
 
 type Detail = { user: AuthUserSummary; membership: DashboardMember; role: Role; roles: Role[]; permissions: Permission[]; factors: Factor[]; passkeys: Passkey[] };

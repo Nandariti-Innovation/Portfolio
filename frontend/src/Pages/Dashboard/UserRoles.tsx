@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Plus, Shield, Trash2 } from "lucide-react";
 import supabase from "@/Superbase/client";
-import { ConfirmActionDialog } from "@/components/ConfirmActionDialog";
+import { ConfirmActionDialog } from "@/Components/ConfirmActionDialog";
 import type { Permission, Role } from "@/features/dashboardUsers/api";
 
 type Assignment = { role_key: string; permission_key: string };

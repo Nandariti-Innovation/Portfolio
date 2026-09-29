@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { attachResumeTracking, setVisitorRoute } from "@/utils/visitorTracking";
+import { attachResumeTracking, setVisitorRoute } from "@/Utils/visitorTracking";
 
 type IdleWindow = Window & {
   requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;

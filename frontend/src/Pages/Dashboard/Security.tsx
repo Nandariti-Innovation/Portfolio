@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Fingerprint, KeyRound, Laptop, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import supabase from "@/Superbase/client";
-import { ConfirmActionDialog } from "@/components/ConfirmActionDialog";
+import { ConfirmActionDialog } from "@/Components/ConfirmActionDialog";
 
 type Factor={id:string;friendly_name?:string;status:string;created_at?:string};type Passkey={id:string;friendly_name?:string;created_at?:string};
 export default function Security({embedded=false}:{embedded?:boolean}){

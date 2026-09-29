@@ -7,7 +7,7 @@ import { projectStyles as styles } from '../ProjectPage/projectStyles';
 import { CaseStudyContent } from './CaseStudyContent';
 import { CaseStudyLayout } from '@/features/caseStudyTemplates/CaseStudyLayout';
 import { validateCaseLayout, type CaseLayout } from '@/features/caseStudyTemplates/model';
-import { useContactModal } from '@/hooks/useContactModal';
+import { useContactModal } from '@/Hooks/useContactModal';
 
 type Result = { id: string; project: ProjectItem | null; layout: CaseLayout | null; failed: boolean };
 

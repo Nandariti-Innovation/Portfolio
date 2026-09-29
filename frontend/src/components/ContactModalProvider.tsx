@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { ContactModalContext } from "@/hooks/useContactModal";
+import { ContactModalContext } from "@/Hooks/useContactModal";
 
 const ContactModal = lazy(() =>
   import("./ContactModal").then((module) => ({ default: module.ContactModal })),

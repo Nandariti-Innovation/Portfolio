@@ -1,5 +1,5 @@
 import { Router } from "@/Routers/Router";
-import { ContactModalProvider } from "@/components/ContactModalProvider";
+import { ContactModalProvider } from "@/Components/ContactModalProvider";
 
 const App = () => (
   <ContactModalProvider>
