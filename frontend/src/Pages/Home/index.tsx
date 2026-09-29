@@ -3,6 +3,7 @@ import { Navigation } from "@/components/Navigation";
 import { Hero } from "@/components/sections/Hero";
 import { useScrollProgress } from "@/hooks/useScrollProgress";
 import { useFetchHomePage } from "@/Hooks/FetchHomePage";
+import { PageLoader } from "@/components/PageLoader";
 
 const PortfolioScene = lazy(() =>
   import("@/components/scene/PortfolioScene").then((module) => ({ default: module.PortfolioScene })),
@@ -30,34 +31,7 @@ const App = () => {
 
   return (
     <main ref={pageRef} aria-busy={isLoading}>
-      {isLoading && (
-        <div className="scene-loader" style={{ zIndex: 100 }}>
-          <div className="loader-content">
-            <img
-              src="/svg/typing_code_loader.svg"
-              alt="Loading portfolio…"
-              width={640}
-              height={420}
-              className="loader-icon"
-            />
-            <div className="loader-progress">
-              <p className="loader-status" role="status" aria-live="polite">
-                {loadingMessage}
-              </p>
-              <div
-                className="loader-track"
-                role="progressbar"
-                aria-label={loadingMessage}
-                aria-valuemin={0}
-                aria-valuemax={100}
-              >
-                <span className="loader-fill loader-indeterminate" />
-              </div>
-              <p className="loader-hint">Good things take a moment.</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {isLoading && <PageLoader message={loadingMessage} />}
       <Navigation />
       <Suspense fallback={null}>
         <PortfolioScene progress={progress} onReady={handleSceneReady} />
