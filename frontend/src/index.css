@@ -122,6 +122,9 @@ button {
   font: 12px "DM Mono";
   letter-spacing: 0.2em;
 }
+.page-loader {
+  z-index: 1000;
+}
 .webgl-fallback {
   position: fixed;
   inset: 0;
