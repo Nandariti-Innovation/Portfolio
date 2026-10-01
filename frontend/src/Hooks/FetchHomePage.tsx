@@ -50,15 +50,22 @@ async function requestHomepagePayload(): Promise<HomepagePayload> {
 
   homepageRequest = (async () => {
     const configuredEndpoint = import.meta.env.VITE_HOMEPAGE_API_URL?.trim();
-    const directSupabase = !configuredEndpoint && import.meta.env.DEV;
-    const endpoint = configuredEndpoint || (directSupabase
-      ? `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/get_homepage_payload`
-      : "/api/homepage");
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim().replace(/\/$/, "");
+    const publicKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+    const directSupabase = !configuredEndpoint;
+
+    if (directSupabase && (!supabaseUrl || !publicKey)) {
+      throw new Error(
+        "Homepage data source is not configured. Set VITE_SUPABASE_URL and " +
+        "VITE_SUPABASE_ANON_KEY before creating the production build.",
+      );
+    }
+
+    const endpoint = configuredEndpoint || `${supabaseUrl}/rest/v1/rpc/get_homepage_payload`;
     const headers = new Headers({ Accept: "application/json" });
     if (directSupabase) {
-      const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      headers.set("apikey", key);
-      headers.set("Authorization", `Bearer ${key}`);
+      headers.set("apikey", publicKey!);
+      headers.set("Authorization", `Bearer ${publicKey}`);
       headers.set("Content-Type", "application/json");
     }
     const response = await fetch(endpoint, {
@@ -69,6 +76,15 @@ async function requestHomepagePayload(): Promise<HomepagePayload> {
       signal: AbortSignal.timeout(12_000),
     });
     if (!response.ok) throw new Error(`Homepage request failed with HTTP ${response.status}`);
+
+    const contentType = response.headers.get("content-type")?.toLowerCase() || "";
+    if (!contentType.includes("application/json")) {
+      throw new Error(
+        `Homepage API returned ${contentType || "an unknown content type"} instead of JSON. ` +
+        "Verify the build-time API configuration and endpoint response.",
+      );
+    }
+
     const payload = await response.json() as HomepagePayload | null;
     if (!payload || typeof payload !== "object") throw new Error("No homepage data returned.");
     writeBrowserCache(payload);
